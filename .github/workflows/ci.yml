@@ -1,0 +1,132 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  hygiene-and-security:
+    name: Brand Hygiene & Secret Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run brand and machine-path hygiene check
+        run: |
+          chmod +x ./scripts/check_brand_hygiene.sh
+          ./scripts/check_brand_hygiene.sh
+
+      - name: Secret hygiene scan (gitleaks CLI v8.30.1)
+        run: |
+          set -euo pipefail
+          GITLEAKS_VERSION="8.30.1"
+          GITLEAKS_SHA256="551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
+          TARBALL="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          TMP_DIR="$(mktemp -d)"
+          trap 'rm -rf "${TMP_DIR}"' EXIT
+          curl -fsSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${TARBALL}" -o "${TMP_DIR}/${TARBALL}"
+          echo "${GITLEAKS_SHA256}  ${TMP_DIR}/${TARBALL}" | sha256sum -c -
+          tar -xzf "${TMP_DIR}/${TARBALL}" -C "${TMP_DIR}" gitleaks
+          "${TMP_DIR}/gitleaks" git --config .gitleaks.toml --redact --verbose .
+
+  go-test-sqlite:
+    name: Go 1.26.0 Format, Vet, Race & SQLite Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go 1.26.0
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.0"
+          cache-dependency-path: go.sum
+
+      - name: Verify gofmt formatting
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "${unformatted}" ]; then
+            echo "Unformatted Go files detected:"
+            echo "${unformatted}"
+            exit 1
+          fi
+
+      - name: Run go vet
+        run: go vet ./...
+
+      - name: Run unit & SQLite integration tests with race detector
+        run: |
+          go test -count=1 -race -coverprofile=coverage.out ./...
+          go tool cover -func=coverage.out | tail -n 1
+
+      - name: Verify binary compilation
+        run: CGO_ENABLED=0 go build -trimpath -o /dev/null ./cmd/layout-engine
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: go-coverage-sqlite
+          path: coverage.out
+          if-no-files-found: ignore
+
+  go-test-postgres:
+    name: Go 1.26.0 PostgreSQL 17 Integration Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: layout
+          POSTGRES_PASSWORD: layout
+          POSTGRES_DB: layout_engine_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U layout -d layout_engine_test"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go 1.26.0
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.0"
+          cache-dependency-path: go.sum
+
+      - name: Run PostgreSQL integration test suite
+        env:
+          DB_DIALECT: postgres
+          DB_DSN: postgres://layout:layout@127.0.0.1:5432/layout_engine_test?sslmode=disable
+          TEST_POSTGRES_DSN: postgres://layout:layout@127.0.0.1:5432/layout_engine_test?sslmode=disable
+        run: go test -count=1 -race ./...
+
+  docker-build:
+    name: Verify OCI Container Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build --tag abeta-layout-engine:ci .

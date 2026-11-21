@@ -1,0 +1,40 @@
+# Build artifacts & binaries
+bin/
+dist/
+/layout-engine
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test & coverage outputs
+*.test
+*.out
+coverage.html
+
+# Local SQLite database files
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
+# Local environment overrides & secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+*.p12
+*.jks
+
+# Editor & OS metadata
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~

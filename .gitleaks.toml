@@ -1,0 +1,11 @@
+title = "Abeta Dynamic Layout Engine gitleaks configuration"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Local Docker Compose and CI example PostgreSQL credentials for ephemeral test environments"
+regexTarget = "match"
+regexes = [
+  '''postgres://layout:layout@(?:postgres|localhost|127\.0\.0\.1):5432/layout_engine(?:_test)?''',
+]

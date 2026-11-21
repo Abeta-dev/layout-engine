@@ -1,0 +1,174 @@
+# Abeta Dynamic Layout Engine (`abeta-dev/layout-engine`)
+
+[![CI](https://github.com/Abeta-dev/layout-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/Abeta-dev/layout-engine/actions/workflows/ci.yml)
+[![Release](https://github.com/Abeta-dev/layout-engine/actions/workflows/release.yml/badge.svg)](https://github.com/Abeta-dev/layout-engine/actions/workflows/release.yml)
+[![Go 1.26.0](https://img.shields.io/badge/Go-1.26.0-00ADD8.svg?logo=go)](https://go.dev/)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+
+**Abeta Dynamic Layout Engine** (`github.com/abeta-dev/layout-engine`) is an open-source, multi-tenant, rule-driven **Server-Driven UI (SDUI) Layout Engine & Visual Layout Studio** written in **Go 1.26.0** with strict Clean Architecture.
+
+Purpose-built for high-velocity quick-commerce storefronts, flash-sale merchandising, multi-form-factor apps, and wearable glances, it emits **1:1 wire-compatible `v1` SDUI contracts** directly from [`github.com/abeta-dev/kmp/bff@v0.1.0`](https://github.com/Abeta-dev/kmp) wrapped in [`github.com/abeta-dev/go-libs@v0.4.0`](https://github.com/Abeta-dev/go-libs) envelopes—making it an immediate **drop-in BFF replacement** for **`abeta-dev/kmp`** clients across Android, iOS, macOS, Desktop JVM, WasmJS, watchOS, and Wear OS.
+
+---
+
+## Architecture Overview
+
+Dependencies strictly follow the **Uncle Bob Dependency Rule** (`internal/domain` and `internal/engine` contain zero HTTP, Gin, or SQL driver imports—guarded by `internal/domain/arch_test.go`).
+
+```mermaid
+flowchart TB
+    subgraph Clients["Multiplatform SDUI Clients (abeta-dev/kmp)"]
+        KMP["Android · iOS · macOS · Desktop JVM · WasmJS\nwatchOS · Wear OS (--bff-url=http://localhost:8090)"]
+        STUDIO_USER["Merchandisers & Product Engineers\n(Browser -> GET /studio)"]
+    end
+
+    subgraph EngineApp["Go 1.26.0 Clean Architecture Service (github.com/abeta-dev/layout-engine)"]
+        CMD["cmd/layout-engine\nEnv Config · Auto-Migrate · Starter Seed · HTTP/2 & h2c · Graceful Shutdown"]
+        HANDLER["internal/handler\nGin Router · Embedded Visual Studio SPA (/studio) · OpenAPI 3.1 (/openapi.json, /docs)\nRuntime & Studio APIs · Brotli/Gzip · SHA-256 ETag · go-libs/ginmw"]
+        USECASE["internal/usecase\nResolveService · StudioService (Draft/Publish/Rollback/Fallback/Diff) · ActionService"]
+        ENGINE["internal/engine\nRuleEvaluator (SemVer, FNV-1a % Rollouts, Schedules)\nSlottingEngine · PageComposer · LayoutValidator · DiffEngine"]
+        DOMAIN["internal/domain\nPure Entities, RequestContext, ResolutionTrace & Store/Engine Ports\n(Zero HTTP/SQL imports — enforced by arch_test.go)"]
+        INFRA["internal/infra\nDual SQLite (modernc.org/sqlite WAL) & PostgreSQL 17 (pgx) Store\nEmbedded Migrations · abeta-fresh Starter Seeder"]
+
+        CMD --> HANDLER
+        CMD --> USECASE
+        CMD --> INFRA
+        HANDLER --> USECASE
+        USECASE --> ENGINE
+        USECASE --> DOMAIN
+        ENGINE --> DOMAIN
+        INFRA -. "implements domain.Store" .-> DOMAIN
+    end
+
+    subgraph Shared["Shared Abeta Ecosystem Contracts"]
+        KMP_WIRE["github.com/abeta-dev/kmp/bff@v0.1.0\npkg/sdui/{actions,atoms,snippets,theming}\n(15 Atoms · 14 Snippets · 18 Actions · AdaptivePageSpec)"]
+        GOLIBS["github.com/abeta-dev/go-libs@v0.4.0\nginmw · apperror · health · logger · env · shutdown"]
+    end
+
+    KMP <-- "ginmw.Envelope + v1 PageResponse\n(X-Layout-Version, X-Layout-Fallback, ETag, Brotli)" --> HANDLER
+    STUDIO_USER <-- "Visual Authoring, Context Simulator & Live Trace" --> HANDLER
+    DOMAIN --> KMP_WIRE
+    ENGINE --> KMP_WIRE
+    HANDLER --> GOLIBS
+```
+
+---
+
+## Quick Start (Zero-Config in 30 Seconds)
+
+### 1. Start the Layout Engine (Pure-Go SQLite + Auto-Migration + Starter Seed)
+
+Requires only **Go 1.26.0**—no external database or Node.js build required:
+
+```bash
+git clone https://github.com/Abeta-dev/layout-engine.git
+cd layout-engine
+go run ./cmd/layout-engine
+```
+
+On first launch, the engine binds to **`:8090`**, initializes `layout-engine.db` in SQLite WAL mode, applies embedded migrations, and seeds the **`abeta-fresh`** quick-commerce starter workspace:
+- **14** KMP `v1` widget templates (1:1 with all 14 `SnippetTypes`)
+- **16+** ready-to-compose widgets
+- **5** targeting rules (city, segment, semver app version, platform, percentage rollout)
+- **2** dynamic slotting rules
+- **5** published dynamic pages: `store-home`, `flash-sale`, `home`, `catalog`, and `watch-status`
+
+### 2. Explore the Embedded Visual Layout Studio & API Docs
+
+- **Visual Layout Studio SPA**: [http://localhost:8090/studio](http://localhost:8090/studio)
+- **Interactive Scalar API Docs**: [http://localhost:8090/docs](http://localhost:8090/docs)
+- **OpenAPI 3.1 JSON Spec**: [http://localhost:8090/openapi.json](http://localhost:8090/openapi.json)
+- **Resolve a Dynamic Page with Live Trace**:
+  ```bash
+  curl "http://localhost:8090/api/v1/pages/store-home?include_trace=true&city=Bengaluru&segment=vip&platform=ios&app_version=2.1.0"
+  ```
+
+### 3. Connect `abeta-dev/kmp` as a Drop-In BFF
+
+Point the `abeta-dev/kmp` Compose Multiplatform `:sample-app` directly at your local Layout Engine:
+
+```bash
+(cd ../kmp/kmp && ./gradlew :sample-app:run --args="--bff-url=http://localhost:8090")
+```
+
+Every layout edit, slot reorder, targeting rule, or rollback published in **`/studio`** reflects immediately in the KMP app—zero client redeployment required.
+
+### 4. Production Deployment with PostgreSQL 17 (Docker Compose)
+
+```bash
+docker compose up --build
+```
+
+Starts **`postgres:17-alpine`** + **`abeta-layout-engine`** with healthchecks, automatic PostgreSQL migrations, and starter seeding on `http://localhost:8090`. See [.env.example](.env.example) for all configuration knobs.
+
+---
+
+## Feature Matrix
+
+| Capability | Details |
+| :--- | :--- |
+| **Multi-Tenant Isolation** | First-class `Tenant` scoping across templates, widgets, layouts, rules, slotting, snapshots, fallbacks, splash configs, token overrides, and audit logs (`?tenant=` or `X-Tenant-ID`, default `abeta-fresh`). |
+| **14 KMP `v1` Snippet Templates** | Full coverage of all 14 `abeta-dev/kmp` SnippetTypes: `header_v1`, `banner_v1`, `metric_card`, `card_v1`, `action_row`, `form_v1`, `empty_state`, `divider`, `spacer`, `carousel`, `grid`, `tabs`, `accordion`, `product_card`. |
+| **Deterministic Rule Evaluator** | `all` (AND) / `any` (OR) match modes across 13 operators: `eq`, `neq`, `in`, `not_in`, `gt`, `gte`, `lt`, `lte`, `semver_gte`, `semver_lt`, `contains`, `regex`, and deterministic FNV-1a `bucket_pct` (`%` rollouts). |
+| **UTC Schedule Windows** | Gate rules, layout slots, slotting injections, and splash screens by `start_at`/`end_at` timestamps, `days_of_week` (`0=Sun..6=Sat`), and half-open `start_hour_utc..end_hour_utc` windows (including overnight wrap-around like `22..4`). |
+| **Dynamic Slotting Engine** | Runtime `insert`, `prepend`, `append`, and `replace` widget injections ordered by `priority`, honoring `Pinned` base slots, preventing duplicate widgets, and re-indexing slots sequentially. |
+| **Immutable Snapshots & Rollback** | Drafts are schema- and cycle-validated (`POST .../validate`) before publishing immutable `PublishedSnapshot` versions; roll back to any historical version in one call with field-level JSON diffs in `ChangeLogEntry`. |
+| **Automatic Fallback Chain** | Pre-validated `FallbackLayout` snapshots serve automatically if runtime snapshot resolution fails, annotating responses with `X-Layout-Fallback: true` and `ResolutionTrace.used_fallback`. |
+| **Rule-Targeted Splash & Tokens** | Dynamically target launch splash screens (`GET /api/v1/config/splash`) and runtime design token overrides (`GET /api/v1/catalog/tokens`). |
+| **Embedded Visual Layout Studio** | Single-binary embedded SPA at `GET /studio` for browsing tenants, editing slots/rules/slotting, simulating device/city/segment/time contexts, inspecting `ResolutionTrace`, publishing, and rolling back. |
+| **Dual SQLite + PostgreSQL 17** | Zero-config pure-Go SQLite WAL (`modernc.org/sqlite`, `CGO_ENABLED=0`) for local/edge runs; full PostgreSQL 17 (`pgx`) with healthchecked Docker Compose for production. |
+| **OpenAPI 3.1 + Scalar Docs** | Live OpenAPI 3.1 schema at `GET /openapi.json` and interactive Scalar API Reference UI at `GET /docs`. |
+| **Production Transport & Observability** | HTTP/1.1 + `h2c` + TLS HTTP/2, negotiated Brotli (`br`) & gzip compression, SHA-256 `ETag`/`304`, `/healthz`, `/readyz`, `/metrics`, plus optional rate limiting and fail-closed JWT auth. |
+
+---
+
+## API Surface Summary
+
+### Studio UI, Docs & Observability
+- `GET /studio` — Embedded Visual Layout Studio SPA
+- `GET /openapi.json` — OpenAPI 3.1 specification
+- `GET /docs` — Interactive Scalar API Reference UI
+- `GET /healthz`, `GET /readyz`, `GET /metrics` — Liveness, readiness, and telemetry probes
+
+### Runtime KMP-Compatible SDUI API (`ginmw.Envelope`)
+- `GET /api/v1/screens` — List published dynamic screens for a tenant
+- `GET /api/v1/screens/:screenId` — Drop-in KMP `PageResponse` resolver (sets `X-Layout-Version` & optional `X-Layout-Fallback: true`)
+- `GET /api/v1/pages/:slug` — Resolve dynamic page; add `?include_trace=true` to return `{ page, trace }`
+- `GET /api/v1/config/splash` — Resolve rule- and schedule-targeted splash configuration
+- `GET /api/v1/catalog/tokens` — Resolve base design token catalog merged with matching `TokenOverride`s
+- `POST /api/v1/actions/execute` — Execute SDUI `ActionTrigger`s (all 18 `v1` action types)
+- `POST /api/v1/orders/express` — Quick-commerce express checkout returning celebration & toast follow-up actions
+
+### Studio Authoring & Governance API (`/api/v1/studio/*`)
+- `GET|POST /api/v1/studio/tenants`
+- `GET /api/v1/studio/templates`
+- `GET|POST /api/v1/studio/widgets`, `DELETE /api/v1/studio/widgets/:id`
+- `GET /api/v1/studio/layouts`, `GET|PUT /api/v1/studio/layouts/:slug`
+- `POST /api/v1/studio/layouts/:slug/{validate,publish,rollback,fallback,preview}`, `GET /api/v1/studio/layouts/:slug/versions`
+- `GET|POST /api/v1/studio/rules`, `DELETE /api/v1/studio/rules/:id`
+- `GET|POST /api/v1/studio/slotting`, `DELETE /api/v1/studio/slotting/:id`
+- `GET|POST /api/v1/studio/splash`
+- `GET|POST /api/v1/studio/tokens`
+- `GET /api/v1/studio/changelog`
+
+---
+
+## Documentation & Engineering Guides
+
+- [docs/architecture.md](docs/architecture.md) — Clean Architecture layers, domain ports, dual-database schema, and runtime resolution pipeline
+- [docs/studio-and-rules.md](docs/studio-and-rules.md) — Visual Layout Studio workflows, rule operators, UTC schedule windows, dynamic slotting, snapshots, and curl cookbook
+- [docs/kmp-integration.md](docs/kmp-integration.md) — Integrating `abeta-dev/kmp` (`:sample-app`, `:storybook`, `:sdui-layout`, `:watch-companion`), context headers, actions, and caching
+- [AGENTS.md](AGENTS.md) · [CLAUDE.md](CLAUDE.md) · [GEMINI.md](GEMINI.md) — AI coding agent contracts and verification gates
+- [skills/abeta-layout-engine/SKILL.md](skills/abeta-layout-engine/SKILL.md) · [agents/layout-engine-owner.md](agents/layout-engine-owner.md) — Domain skill & Code Owner review persona
+- [CONTRIBUTING.md](CONTRIBUTING.md) · [SECURITY.md](SECURITY.md) · [CHANGELOG.md](CHANGELOG.md) · [LICENSE](LICENSE)
+
+---
+
+## Verification & Development Commands
+
+```bash
+make run        # Start on :8090 with zero-config SQLite + abeta-fresh starter seed
+make test-race  # Run go test -count=1 -race -cover ./...
+make verify     # Run ./scripts/verify_all.sh (hygiene, gofmt, go vet, race tests, static build)
+make docker-up  # Start PostgreSQL 17 + layout-engine via docker-compose.yaml
+```

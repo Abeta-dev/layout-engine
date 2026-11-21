@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Abeta Layout Studio — Dynamic SDUI Workbench</title>
+  <link rel="stylesheet" href="/studio/app.css" />
+</head>
+<body>
+  <div id="global-loader" class="global-loader" hidden aria-hidden="true"></div>
+
+  <!-- ── Top Studio Header Bar ─────────────────────────────────────────────── -->
+  <header class="studio-header" role="banner">
+    <div class="header-left">
+      <div class="brand-lockup">
+        <span class="brand-mark" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <rect x="2.5" y="2.5" width="8" height="8" rx="2.2" fill="currentColor" opacity="0.95"/>
+            <rect x="13.5" y="2.5" width="8" height="8" rx="2.2" fill="currentColor" opacity="0.45"/>
+            <rect x="2.5" y="13.5" width="8" height="8" rx="2.2" fill="currentColor" opacity="0.45"/>
+            <path d="M17.5 13L14.5 18H17.5L16.5 22L21 16.5H17.8L17.5 13Z" fill="#F59E0B"/>
+          </svg>
+        </span>
+        <div class="brand-text">
+          <span class="brand-title">Abeta Layout Studio</span>
+          <span class="brand-sub">SDUI v1 Engine</span>
+        </div>
+      </div>
+
+      <span class="header-divider" aria-hidden="true"></span>
+
+      <div class="tenant-picker" title="Active Tenant Workspace">
+        <label for="tenant-select" class="sr-only">Tenant</label>
+        <select id="tenant-select" class="select-compact tenant-select" aria-label="Select tenant">
+          <option value="abeta-fresh">abeta-fresh</option>
+        </select>
+        <button id="btn-new-tenant" type="button" class="btn-icon-xs" title="Create new tenant workspace" aria-label="Create new tenant">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+      </div>
+
+      <div class="active-layout-pill" aria-live="polite">
+        <span class="pill-label">Layout</span>
+        <span id="active-layout-slug" class="mono pill-slug">—</span>
+        <span id="active-layout-version" class="status-badge badge-neutral">Loading</span>
+        <span id="unsaved-indicator" class="unsaved-dot" hidden title="You have unsaved draft changes">Unsaved</span>
+      </div>
+    </div>
+
+    <div class="header-actions" role="toolbar" aria-label="Layout lifecycle actions">
+      <button id="btn-validate" type="button" class="btn btn-ghost" title="Validate draft layout & widget bindings">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+        <span class="btn-label">Validate</span>
+      </button>
+
+      <button id="btn-save-draft" type="button" class="btn btn-secondary" title="Save draft changes (Cmd/Ctrl+S)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        <span class="btn-label">Save Draft</span>
+      </button>
+
+      <button id="btn-publish" type="button" class="btn btn-primary" title="Publish immutable versioned snapshot">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+        <span class="btn-label">Publish</span>
+      </button>
+
+      <button id="btn-set-fallback" type="button" class="btn btn-ghost" title="Promote current published layout as resilient fallback">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span class="btn-label-lg">Set Fallback</span>
+      </button>
+
+      <button id="btn-history" type="button" class="btn btn-ghost" title="Snapshot history & rollback">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>
+        <span class="btn-label-lg">History</span>
+      </button>
+
+      <button id="btn-brand-config" type="button" class="btn btn-ghost" title="Splash screens & runtime token overrides">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M2 12h3M19 12h3M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12"/></svg>
+        <span class="btn-label-xl">Tokens</span>
+      </button>
+
+      <span class="header-divider" aria-hidden="true"></span>
+
+      <button id="btn-theme-toggle" type="button" class="btn-icon" title="Toggle Dark / Light Studio theme" aria-label="Toggle theme">
+        <svg id="icon-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg id="icon-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" hidden><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+
+      <a href="/docs" target="_blank" rel="noopener noreferrer" class="btn btn-docs" title="Open OpenAPI 3.1 Scalar Documentation">
+        <span>API Docs</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      </a>
+    </div>
+  </header>
+
+  <!-- ── 3-Pane IDE Studio Shell ───────────────────────────────────────────── -->
+  <div class="studio-shell">
+    <!-- ── Left Navigation & Palette Rail ──────────────────────────────────── -->
+    <aside class="left-rail" aria-label="Studio resource palette">
+      <nav class="rail-tabs" role="tablist" aria-label="Resource categories">
+        <button type="button" class="rail-tab active" role="tab" aria-selected="true" data-left-tab="pages">
+          <span>Pages</span>
+          <span id="count-pages" class="tab-count">0</span>
+        </button>
+        <button type="button" class="rail-tab" role="tab" aria-selected="false" data-left-tab="widgets">
+          <span>Widgets</span>
+          <span id="count-widgets" class="tab-count">0</span>
+        </button>
+        <button type="button" class="rail-tab" role="tab" aria-selected="false" data-left-tab="rules">
+          <span>Rules</span>
+          <span id="count-rules" class="tab-count">0</span>
+        </button>
+        <button type="button" class="rail-tab" role="tab" aria-selected="false" data-left-tab="slotting">
+          <span>Slotting</span>
+          <span id="count-slotting" class="tab-count">0</span>
+        </button>
+        <button type="button" class="rail-tab" role="tab" aria-selected="false" data-left-tab="audit">
+          <span>Audit</span>
+          <span id="count-audit" class="tab-count">0</span>
+        </button>
+      </nav>
+
+      <!-- Tab 1: Pages -->
+      <section id="panel-pages" class="rail-panel" role="tabpanel">
+        <div class="panel-toolbar">
+          <span class="panel-heading">Dynamic Layouts</span>
+          <button id="btn-toggle-new-page" type="button" class="btn btn-xs btn-primary">+ New Page</button>
+        </div>
+
+        <form id="new-page-form" class="inline-card-form" hidden>
+          <div class="form-title">Create Dynamic Page</div>
+          <div class="field-group">
+            <label for="np-slug">Route Slug</label>
+            <input id="np-slug" type="text" required placeholder="e.g. flash-deals" pattern="[a-z0-9][a-z0-9\-_]*" />
+          </div>
+          <div class="field-group">
+            <label for="np-title">Page Title</label>
+            <input id="np-title" type="text" required placeholder="e.g. 10-Min Flash Deals" />
+          </div>
+          <div class="field-group">
+            <label for="np-description">Description</label>
+            <input id="np-description" type="text" placeholder="Optional authoring note" />
+          </div>
+          <div class="field-row">
+            <div class="field-group">
+              <label for="np-layout-mode">Layout Mode</label>
+              <select id="np-layout-mode">
+                <option value="single_column">single_column</option>
+                <option value="split_pane">split_pane</option>
+                <option value="centered">centered</option>
+              </select>
+            </div>
+          </div>
+          <label class="checkbox-row">
+            <input id="np-floating-cart" type="checkbox" checked />
+            <span>Enable Floating Cart Dock</span>
+          </label>
+          <div class="form-actions">
+            <button id="btn-cancel-new-page" type="button" class="btn btn-xs btn-ghost">Cancel</button>
+            <button type="submit" class="btn btn-xs btn-primary">Create Page</button>
+          </div>
+        </form>
+
+        <div id="page-list" class="item-list" aria-live="polite"></div>
+      </section>
+
+      <!-- Tab 2: Widgets -->
+      <section id="panel-widgets" class="rail-panel" role="tabpanel" hidden>
+        <div class="panel-toolbar">
+          <span class="panel-heading">Widget Library</span>
+          <button id="btn-open-new-widget" type="button" class="btn btn-xs btn-primary">+ New Widget</button>
+        </div>
+        <div class="filter-stack">
+          <input id="widget-search" type="search" class="input-search" placeholder="Search widgets, tags, slugs..." aria-label="Search widgets" />
+          <select id="widget-type-filter" class="select-compact" aria-label="Filter by snippet type">
+            <option value="">All 14 Snippet Types</option>
+            <option value="header_v1">header_v1</option>
+            <option value="banner_v1">banner_v1</option>
+            <option value="metric_card">metric_card</option>
+            <option value="product_card">product_card</option>
+            <option value="card_v1">card_v1</option>
+            <option value="action_row">action_row</option>
+            <option value="grid">grid</option>
+            <option value="carousel">carousel</option>
+            <option value="tabs">tabs</option>
+            <option value="accordion">accordion</option>
+            <option value="form_v1">form_v1</option>
+            <option value="empty_state">empty_state</option>
+            <option value="divider">divider</option>
+            <option value="spacer">spacer</option>
+          </select>
+        </div>
+        <div id="widget-list" class="item-list"></div>
+      </section>
+
+      <!-- Tab 3: Targeting Rules -->
+      <section id="panel-rules" class="rail-panel" role="tabpanel" hidden>
+        <div class="panel-toolbar">
+          <span class="panel-heading">Targeting Rules</span>
+          <button id="btn-toggle-new-rule" type="button" class="btn btn-xs btn-primary">+ New Rule</button>
+        </div>
+
+        <form id="new-rule-form" class="inline-card-form" hidden>
+          <div class="form-title">Create Targeting Rule</div>
+          <div class="field-row">
+            <div class="field-group">
+              <label for="nr-key">Rule Key</label>
+              <input id="nr-key" type="text" required placeholder="vip_blr_morning" />
+            </div>
+            <div class="field-group">
+              <label for="nr-priority">Priority</label>
+              <input id="nr-priority" type="number" value="10" />
+            </div>
+          </div>
+          <div class="field-group">
+            <label for="nr-name">Display Name</label>
+            <input id="nr-name" type="text" required placeholder="VIP Bengaluru Morning" />
+          </div>
+          <div class="field-group">
+            <label for="nr-description">Description</label>
+            <input id="nr-description" type="text" placeholder="Optional targeting rationale" />
+          </div>
+          <div class="field-row">
+            <div class="field-group">
+              <label for="nr-match-mode">Match Mode</label>
+              <select id="nr-match-mode">
+                <option value="all">all (AND)</option>
+                <option value="any">any (OR)</option>
+              </select>
+            </div>
+            <label class="checkbox-row checkbox-inline">
+              <input id="nr-enabled" type="checkbox" checked />
+              <span>Enabled</span>
+            </label>
+          </div>
+
+          <div class="conditions-block">
+            <div class="conditions-header">
+              <span>Conditions</span>
+              <button id="btn-add-condition" type="button" class="btn btn-xs btn-ghost">+ Condition</button>
+            </div>
+            <div id="nr-conditions-list" class="conditions-list"></div>
+          </div>
+
+          <div class="field-row">
+            <div class="field-group">
+              <label for="nr-start-hour">UTC Start Hr</label>
+              <input id="nr-start-hour" type="number" min="0" max="23" placeholder="0-23" />
+            </div>
+            <div class="field-group">
+              <label for="nr-end-hour">UTC End Hr</label>
+              <input id="nr-end-hour" type="number" min="0" max="23" placeholder="0-23" />
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button id="btn-cancel-new-rule" type="button" class="btn btn-xs btn-ghost">Cancel</button>
+            <button type="submit" class="btn btn-xs btn-primary">Save Rule</button>
+          </div>
+        </form>
+
+        <div id="rule-list" class="item-list"></div>
+      </section>
+
+      <!-- Tab 4: Slotting Rules -->
+      <section id="panel-slotting" class="rail-panel" role="tabpanel" hidden>
+        <div class="panel-toolbar">
+          <div>
+            <span class="panel-heading">Dynamic Slotting</span>
+            <span id="slotting-layout-label" class="muted-mono"></span>
+          </div>
+          <button id="btn-toggle-new-slotting" type="button" class="btn btn-xs btn-primary">+ New Rule</button>
+        </div>
+
+        <form id="new-slotting-form" class="inline-card-form" hidden>
+          <div class="form-title">Create Slotting Override</div>
+          <div class="field-group">
+            <label for="ns-name">Rule Name</label>
+            <input id="ns-name" type="text" required placeholder="Inject Flash Hero Banner" />
+          </div>
+          <div class="field-row">
+            <div class="field-group">
+              <label for="ns-layout-slug">Layout Slug</label>
+              <input id="ns-layout-slug" type="text" required placeholder="store-home" />
+            </div>
+            <div class="field-group">
+              <label for="ns-priority">Priority</label>
+              <input id="ns-priority" type="number" value="10" />
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field-group">
+              <label for="ns-action">Action</label>
+              <select id="ns-action">
+                <option value="insert">insert</option>
+                <option value="prepend">prepend</option>
+                <option value="append">append</option>
+                <option value="replace">replace</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label for="ns-position">Target Pos</label>
+              <input id="ns-position" type="number" min="0" value="0" />
+            </div>
+          </div>
+          <div class="field-group">
+            <label for="ns-widget-id">Widget to Inject</label>
+            <select id="ns-widget-id" required></select>
+          </div>
+          <div class="field-group">
+            <label for="ns-rule-id">Targeting Rule (Optional)</label>
+            <select id="ns-rule-id">
+              <option value="">Always active</option>
+            </select>
+          </div>
+          <div class="field-row">
+            <div class="field-group">
+              <label for="ns-start-hour">UTC Start Hr</label>
+              <input id="ns-start-hour" type="number" min="0" max="23" placeholder="0-23" />
+            </div>
+            <div class="field-group">
+              <label for="ns-end-hour">UTC End Hr</label>
+              <input id="ns-end-hour" type="number" min="0" max="23" placeholder="0-23" />
+            </div>
+          </div>
+          <label class="checkbox-row">
+            <input id="ns-enabled" type="checkbox" checked />
+            <span>Enabled</span>
+          </label>
+          <div class="form-actions">
+            <button id="btn-cancel-new-slotting" type="button" class="btn btn-xs btn-ghost">Cancel</button>
+            <button type="submit" class="btn btn-xs btn-primary">Save Slotting Rule</button>
+          </div>
+        </form>
+
+        <div id="slotting-list" class="item-list"></div>
+      </section>
+
+      <!-- Tab 5: Audit ChangeLog -->
+      <section id="panel-audit" class="rail-panel" role="tabpanel" hidden>
+        <div class="panel-toolbar">
+          <span class="panel-heading">Audit ChangeLog</span>
+          <button id="btn-refresh-audit" type="button" class="btn btn-xs btn-ghost">Refresh</button>
+        </div>
+        <div id="audit-list" class="item-list audit-feed"></div>
+      </section>
+    </aside>
+
+    <!-- ── Center Visual Composer & Live Device Preview ─────────────────────── -->
+    <main class="center-stage" aria-label="Visual layout canvas">
+      <div class="stage-bar">
+        <div class="mode-switcher" role="tablist" aria-label="Workspace view mode">
+          <button id="tab-composer" type="button" class="mode-tab active" role="tab" aria-selected="true" data-center-tab="composer">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="4" rx="1"/><rect x="3" y="10" width="18" height="4" rx="1"/><rect x="3" y="16" width="18" height="4" rx="1"/></svg>
+            <span>Slot Composer</span>
+          </button>
+          <button id="tab-preview" type="button" class="mode-tab" role="tab" aria-selected="false" data-center-tab="preview">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+            <span>Live Preview</span>
+          </button>
+          <button id="tab-json" type="button" class="mode-tab" role="tab" aria-selected="false" data-center-tab="json">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            <span>v1 KMP JSON</span>
+          </button>
+        </div>
+
+        <div class="stage-meta-right">
+          <div id="stage-layout-meta" class="chrome-chips"></div>
+          <button id="btn-page-config" type="button" class="btn btn-xs btn-ghost" title="Configure toolbar, adaptive layout, and floating cart">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            <span>Page Chrome</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Validation Alert Banner -->
+      <div id="validation-banner" class="validation-banner" role="alert" hidden>
+        <div id="validation-banner-body" class="validation-banner-body"></div>
+        <button id="btn-close-validation" type="button" class="btn-icon-xs" aria-label="Dismiss validation results">&times;</button>
+      </div>
+
+      <!-- Center View 1: Slot Composer -->
+      <section id="view-composer" class="stage-view" role="tabpanel">
+        <div class="composer-header">
+          <div>
+            <h2 class="composer-title">Ordered Slot Stack</h2>
+            <p class="composer-sub">Reorder slots, pin positions against dynamic slotting, attach targeting rules, or override props per placement.</p>
+          </div>
+          <div class="composer-actions">
+            <span id="composer-slot-count" class="status-badge badge-neutral mono">0 slots</span>
+            <button id="btn-composer-add-widget" type="button" class="btn btn-xs btn-secondary">+ Add from Palette</button>
+          </div>
+        </div>
+        <div id="slot-list" class="slot-stack"></div>
+      </section>
+
+      <!-- Center View 2: Live Device Preview -->
+      <section id="view-preview" class="stage-view preview-view" role="tabpanel" hidden>
+        <div class="preview-toolbar">
+          <div class="segmented-control" role="group" aria-label="Device viewport">
+            <button id="btn-device-phone" type="button" class="seg-btn active" data-device="phone">Phone 390px</button>
+            <button id="btn-device-desktop" type="button" class="seg-btn" data-device="desktop">Desktop Split-Pane</button>
+            <button id="btn-device-watch" type="button" class="seg-btn" data-device="watch">Watch 210px</button>
+          </div>
+
+          <div class="preview-toolbar-right">
+            <div class="segmented-control" role="group" aria-label="Preview revision source">
+              <button id="btn-preview-draft" type="button" class="seg-btn active">Draft</button>
+              <button id="btn-preview-published" type="button" class="seg-btn">Published</button>
+            </div>
+            <button id="btn-refresh-preview" type="button" class="btn btn-xs btn-ghost" title="Refresh preview">
+              <span id="preview-spinner" class="spinner" hidden aria-hidden="true"></span>
+              <span>Refresh</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="preview-dirty-bar" class="dirty-bar" hidden>
+          <span>You have unsaved slot edits in the Composer. Save draft to reflect them in server-resolved preview.</span>
+          <button id="btn-preview-save-refresh" type="button" class="btn btn-xs btn-amber">Save Draft &amp; Refresh</button>
+        </div>
+
+        <div id="device-stage" class="device-stage">
+          <div id="device-frame" class="device-frame device-phone">
+            <div class="device-bezel-top" aria-hidden="true">
+              <span class="device-time">9:41</span>
+              <span class="device-notch"></span>
+              <span class="device-indicators">5G · 100%</span>
+            </div>
+            <div id="device-screen" class="device-screen kmp-light"></div>
+            <div class="device-bezel-bottom" aria-hidden="true">
+              <span class="device-home-bar"></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Center View 3: v1 KMP JSON & curl -->
+      <section id="view-json" class="stage-view json-view" role="tabpanel" hidden>
+        <div class="json-toolbar">
+          <div class="json-meta">
+            <span class="panel-heading">v1 KMP PageResponse Contract</span>
+            <span id="json-meta-stats" class="muted-mono">0 bytes</span>
+          </div>
+          <div class="json-actions">
+            <button id="btn-copy-curl" type="button" class="btn btn-xs btn-ghost">Copy KMP curl</button>
+            <button id="btn-copy-full-json" type="button" class="btn btn-xs btn-ghost">Copy Full + Trace</button>
+            <button id="btn-copy-page-json" type="button" class="btn btn-xs btn-primary">Copy Page JSON</button>
+          </div>
+        </div>
+
+        <div class="curl-card">
+          <div class="curl-label">KMP Runtime Client Request</div>
+          <pre id="kmp-curl-cmd" class="curl-code mono"></pre>
+        </div>
+
+        <div class="json-card">
+          <pre id="json-viewer" class="json-code mono"></pre>
+        </div>
+      </section>
+    </main>
+
+    <!-- ── Right Inspector — Context Simulator & Resolution Trace ──────────── -->
+    <aside class="right-inspector" aria-label="Context simulator and resolution trace">
+      <div class="inspector-section">
+        <div class="inspector-header">
+          <span class="panel-heading">Context Simulator</span>
+          <button id="btn-reset-context" type="button" class="btn btn-xs btn-ghost">Reset</button>
+        </div>
+
+        <div class="ctx-grid">
+          <div class="field-group span-2">
+            <label>Preview Mode</label>
+            <div class="segmented-control full-width" role="group" aria-label="Context preview mode">
+              <button id="ctx-mode-draft" type="button" class="seg-btn active">Draft</button>
+              <button id="ctx-mode-published" type="button" class="seg-btn">Published</button>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label for="ctx-platform">Platform</label>
+            <select id="ctx-platform">
+              <option value="ios">ios</option>
+              <option value="android">android</option>
+              <option value="macos">macos</option>
+              <option value="watchos">watchos</option>
+              <option value="wearos">wearos</option>
+              <option value="web">web</option>
+              <option value="desktop">desktop</option>
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label for="ctx-app-version">App Version</label>
+            <input id="ctx-app-version" type="text" value="1.2.0" placeholder="1.2.0" />
+          </div>
+
+          <div class="field-group">
+            <label for="ctx-city">City</label>
+            <select id="ctx-city">
+              <option value="bengaluru">bengaluru</option>
+              <option value="mumbai">mumbai</option>
+              <option value="delhi">delhi</option>
+              <option value="hyderabad">hyderabad</option>
+              <option value="pune">pune</option>
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label for="ctx-zone">Zone</label>
+            <input id="ctx-zone" type="text" value="koramangala-01" placeholder="zone-01" />
+          </div>
+
+          <div class="field-group">
+            <label for="ctx-segment">Segment</label>
+            <select id="ctx-segment">
+              <option value="standard">standard</option>
+              <option value="vip">vip</option>
+              <option value="new_user">new_user</option>
+              <option value="returning">returning</option>
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label for="ctx-window-class">Window Class</label>
+            <select id="ctx-window-class">
+              <option value="compact">compact</option>
+              <option value="medium">medium</option>
+              <option value="expanded">expanded</option>
+            </select>
+          </div>
+
+          <div class="field-group span-2">
+            <label for="ctx-user-id">User ID <span class="hint-text">(% rollout hash key)</span></label>
+            <input id="ctx-user-id" type="text" value="user-1042" placeholder="user-1042" />
+          </div>
+
+          <div class="field-group span-2 utc-sim-box">
+            <div class="utc-sim-header">
+              <label class="checkbox-row">
+                <input id="ctx-hour-enabled" type="checkbox" />
+                <span>Simulate UTC Hour</span>
+              </label>
+              <span id="ctx-utc-hour-label" class="mono utc-badge">Live UTC</span>
+            </div>
+            <input id="ctx-utc-hour" type="range" min="0" max="23" value="10" disabled aria-label="Simulated UTC hour" />
+            <div class="utc-presets">
+              <button type="button" class="chip-btn" data-hour-preset="7">07:00 AM</button>
+              <button type="button" class="chip-btn" data-hour-preset="13">13:00 Noon</button>
+              <button type="button" class="chip-btn" data-hour-preset="19">19:00 Flash</button>
+              <button type="button" class="chip-btn" data-hour-preset="live">Live</button>
+            </div>
+          </div>
+
+          <label class="checkbox-row span-2 dark-mode-toggle">
+            <input id="ctx-dark-mode" type="checkbox" />
+            <span>Device Dark Mode <span class="hint-text">(preview + context)</span></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="inspector-section trace-section" id="trace-panel">
+        <div class="inspector-header">
+          <span class="panel-heading">Resolution Trace</span>
+          <span id="trace-latency" class="latency-pill mono">— ms</span>
+        </div>
+
+        <div class="trace-stats-grid">
+          <div class="trace-stat">
+            <span class="trace-stat-label">Snapshot</span>
+            <span id="trace-snapshot-version" class="trace-stat-value mono">—</span>
+          </div>
+          <div class="trace-stat">
+            <span class="trace-stat-label">Fallback</span>
+            <span id="trace-fallback-badge" class="status-badge badge-emerald">Primary</span>
+          </div>
+          <div class="trace-stat">
+            <span class="trace-stat-label">Snippets</span>
+            <span id="trace-snippet-count" class="trace-stat-value mono">0</span>
+          </div>
+          <div class="trace-stat">
+            <span class="trace-stat-label">Resolved</span>
+            <span id="trace-resolved-at" class="trace-stat-value mono">—</span>
+          </div>
+        </div>
+
+        <div id="trace-fallback-reason" class="trace-warning" hidden></div>
+
+        <div class="trace-group">
+          <div class="trace-group-title">Matched Targeting Rules</div>
+          <div id="trace-matched-rules" class="chip-wrap"></div>
+        </div>
+
+        <div class="trace-group">
+          <div class="trace-group-title">Applied Slotting Rules</div>
+          <div id="trace-applied-slotting" class="chip-wrap"></div>
+        </div>
+
+        <div class="trace-group">
+          <div class="trace-group-title">Skipped Slots</div>
+          <div id="trace-skipped-slots" class="chip-wrap"></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ── Modal 1: Create / Edit Widget ─────────────────────────────────────── -->
+  <div id="modal-widget" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-widget-title" hidden>
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <h3 id="modal-widget-title">Create Widget from Template</h3>
+        <button type="button" class="btn-icon-xs modal-close" data-close-modal="modal-widget" aria-label="Close">&times;</button>
+      </div>
+      <form id="widget-form" class="modal-body">
+        <input id="wf-id" type="hidden" />
+        <div class="field-row">
+          <div class="field-group">
+            <label for="wf-template">Seed from Widget Template (14 built-in)</label>
+            <select id="wf-template">
+              <option value="">— Choose template to pre-fill props —</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label for="wf-snippet-type">KMP v1 Snippet Type</label>
+            <select id="wf-snippet-type" required>
+              <option value="banner_v1">banner_v1</option>
+              <option value="header_v1">header_v1</option>
+              <option value="product_card">product_card</option>
+              <option value="metric_card">metric_card</option>
+              <option value="card_v1">card_v1</option>
+              <option value="action_row">action_row</option>
+              <option value="grid">grid</option>
+              <option value="carousel">carousel</option>
+              <option value="tabs">tabs</option>
+              <option value="accordion">accordion</option>
+              <option value="form_v1">form_v1</option>
+              <option value="empty_state">empty_state</option>
+              <option value="divider">divider</option>
+              <option value="spacer">spacer</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-group">
+            <label for="wf-name">Widget Name</label>
+            <input id="wf-name" type="text" required placeholder="e.g. Organic Mango Promo Banner" />
+          </div>
+          <div class="field-group">
+            <label for="wf-slug">Widget Slug</label>
+            <input id="wf-slug" type="text" required placeholder="e.g. organic-mango-banner" />
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-group">
+            <label for="wf-tags">Tags <span class="hint-text">(comma-separated)</span></label>
+            <input id="wf-tags" type="text" placeholder="promo, fresh, hero" />
+          </div>
+          <label class="checkbox-row checkbox-inline">
+            <input id="wf-active" type="checkbox" checked />
+            <span>Active</span>
+          </label>
+        </div>
+
+        <div class="field-group">
+          <div class="label-row">
+            <label for="wf-props">Widget Props JSON</label>
+            <button id="btn-format-widget-json" type="button" class="btn btn-xs btn-ghost">Format JSON</button>
+          </div>
+          <textarea id="wf-props" class="code-textarea mono" rows="11" spellcheck="false" required>{}</textarea>
+        </div>
+
+        <div class="field-group">
+          <label for="wf-motion">Motion Spec JSON <span class="hint-text">(optional, e.g. {"enter":"slide_up","duration_token":"fast"})</span></label>
+          <textarea id="wf-motion" class="code-textarea mono" rows="2" spellcheck="false" placeholder="Leave blank for none"></textarea>
+        </div>
+
+        <div id="wf-json-error" class="form-error" hidden></div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" data-close-modal="modal-widget">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Widget</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Modal 2: Edit Slot Rule & Overrides ───────────────────────────────── -->
+  <div id="modal-slot" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-slot-title" hidden>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modal-slot-title">Edit Slot Configuration</h3>
+        <button type="button" class="btn-icon-xs modal-close" data-close-modal="modal-slot" aria-label="Close">&times;</button>
+      </div>
+      <form id="slot-form" class="modal-body">
+        <input id="sf-index" type="hidden" />
+        <div class="slot-meta-banner">
+          <span id="sf-slot-id" class="mono status-badge badge-neutral"></span>
+          <span id="sf-widget-label" class="slot-widget-name"></span>
+        </div>
+
+        <div class="field-group">
+          <label for="sf-rule-id">Attached Targeting Rule</label>
+          <select id="sf-rule-id">
+            <option value="">None (Always visible)</option>
+          </select>
+        </div>
+
+        <div class="field-row">
+          <div class="field-group">
+            <label for="sf-start-hour">Schedule UTC Start Hr</label>
+            <input id="sf-start-hour" type="number" min="0" max="23" placeholder="0-23 (optional)" />
+          </div>
+          <div class="field-group">
+            <label for="sf-end-hour">Schedule UTC End Hr</label>
+            <input id="sf-end-hour" type="number" min="0" max="23" placeholder="0-23 (optional)" />
+          </div>
+        </div>
+
+        <div class="field-row">
+          <label class="checkbox-row">
+            <input id="sf-pinned" type="checkbox" />
+            <span>Pinned slot (protected from slotting shifts)</span>
+          </label>
+          <label class="checkbox-row">
+            <input id="sf-enabled" type="checkbox" checked />
+            <span>Enabled</span>
+          </label>
+        </div>
+
+        <div class="field-group">
+          <div class="label-row">
+            <label for="sf-overrides">Per-Slot Prop Overrides JSON</label>
+            <button id="btn-format-slot-json" type="button" class="btn btn-xs btn-ghost">Format JSON</button>
+          </div>
+          <textarea id="sf-overrides" class="code-textarea mono" rows="7" spellcheck="false" placeholder="{}"></textarea>
+        </div>
+
+        <div id="sf-json-error" class="form-error" hidden></div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" data-close-modal="modal-slot">Cancel</button>
+          <button type="submit" class="btn btn-primary">Apply to Draft</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Modal 3: Publish Snapshot & Diff ──────────────────────────────────── -->
+  <div id="modal-publish" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-publish-title" hidden>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modal-publish-title">Publish Layout Snapshot</h3>
+        <button type="button" class="btn-icon-xs modal-close" data-close-modal="modal-publish" aria-label="Close">&times;</button>
+      </div>
+      <form id="publish-form" class="modal-body">
+        <p class="modal-desc">Publishing validates the draft, freezes all referenced widgets into an immutable snapshot, and updates live KMP runtime clients.</p>
+        <div class="field-row">
+          <div class="field-group">
+            <label for="pf-actor">Publisher / Actor</label>
+            <input id="pf-actor" type="text" value="studio-admin" required />
+          </div>
+          <div class="field-group">
+            <label for="pf-comment">Release Note</label>
+            <input id="pf-comment" type="text" placeholder="e.g. Launch evening flash banner" />
+          </div>
+        </div>
+
+        <div id="publish-diff-section" class="publish-diff-box" hidden>
+          <div class="panel-heading">Published Diff Summary</div>
+          <div id="publish-diff-list" class="diff-list"></div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" data-close-modal="modal-publish">Close</button>
+          <button id="btn-confirm-publish" type="submit" class="btn btn-primary">Publish Now</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Modal 4: Version History & Rollback ───────────────────────────────── -->
+  <div id="modal-history" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-history-title" hidden>
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <div>
+          <h3 id="modal-history-title">Snapshot History &amp; Rollback</h3>
+          <span id="history-layout-slug" class="muted-mono"></span>
+        </div>
+        <button type="button" class="btn-icon-xs modal-close" data-close-modal="modal-history" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="history-list" class="history-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Modal 5: Page Chrome & Adaptive Config ────────────────────────────── -->
+  <div id="modal-page-config" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-page-config-title" hidden>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modal-page-config-title">Page Chrome &amp; Adaptive Config</h3>
+        <button type="button" class="btn-icon-xs modal-close" data-close-modal="modal-page-config" aria-label="Close">&times;</button>
+      </div>
+      <form id="page-config-form" class="modal-body">
+        <div class="field-row">
+          <div class="field-group">
+            <label for="pcf-title">Layout Title</label>
+            <input id="pcf-title" type="text" required />
+          </div>
+          <div class="field-group">
+            <label for="pcf-description">Description</label>
+            <input id="pcf-description" type="text" />
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-group">
+            <label for="pcf-toolbar-title">Toolbar Title</label>
+            <input id="pcf-toolbar-title" type="text" placeholder="e.g. Abeta Fresh · 10 mins" />
+          </div>
+          <div class="field-group">
+            <label for="pcf-toolbar-subtitle">Toolbar Subtitle</label>
+            <input id="pcf-toolbar-subtitle" type="text" placeholder="e.g. Koramangala, Bengaluru" />
+          </div>
+        </div>
+
+        <div class="config-subbox">
+          <div class="subbox-title">Adaptive Layout (Desktop / Tablet)</div>
+          <div class="field-row">
+            <div class="field-group">
+              <label for="pcf-layout-mode">Layout Mode</label>
+              <select id="pcf-layout-mode">
+                <option value="single_column">single_column</option>
+                <option value="centered">centered</option>
+                <option value="split_pane">split_pane</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label for="pcf-max-width">Max Width (dp)</label>
+              <input id="pcf-max-width" type="number" min="360" max="1920" placeholder="1200" />
+            </div>
+          </div>
+          <label class="checkbox-row">
+            <input id="pcf-split-pane" type="checkbox" />
+            <span>Enable Split-Pane on Expanded Width</span>
+          </label>
+          <div class="field-group">
+            <label for="pcf-secondary-ids">Secondary Pane Snippet/Slot IDs <span class="hint-text">(comma-separated)</span></label>
+            <input id="pcf-secondary-ids" type="text" placeholder="e.g. slot_cart_summary, slot_promo" />
+          </div>
+        </div>
+
+        <div class="config-subbox">
+          <label class="checkbox-row">
+            <input id="pcf-floating-cart-enabled" type="checkbox" />
+            <span class="subbox-title">Floating Cart Dock</span>
+          </label>
+          <div class="field-row">
+            <div class="field-group">
+              <label for="pcf-cart-label">Cart Label</label>
+              <input id="pcf-cart-label" type="text" placeholder="View Cart" />
+            </div>
+            <div class="field-group">
+              <label for="pcf-cart-eta">ETA Badge</label>
+              <input id="pcf-cart-eta" type="text" placeholder="10 mins" />
+            </div>
+            <div class="field-group">
+              <label for="pcf-cart-cta">CTA Label</label>
+              <input id="pcf-cart-cta" type="text" placeholder="Checkout" />
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" data-close-modal="modal-page-config">Cancel</button>
+          <button type="submit" class="btn btn-primary">Apply Page Chrome</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Modal 6: New Tenant ───────────────────────────────────────────────── -->
+  <div id="modal-tenant" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-tenant-title" hidden>
+    <div class="modal-card modal-sm">
+      <div class="modal-header">
+        <h3 id="modal-tenant-title">Create Tenant Workspace</h3>
+        <button type="button" class="btn-icon-xs modal-close" data-close-modal="modal-tenant" aria-label="Close">&times;</button>
+      </div>
+      <form id="tenant-form" class="modal-body">
+        <div class="field-group">
+          <label for="tf-slug">Tenant Slug</label>
+          <input id="tf-slug" type="text" required placeholder="e.g. abeta-pharmacy" pattern="[a-z0-9][a-z0-9\-_]*" />
+        </div>
+        <div class="field-group">
+          <label for="tf-name">Tenant Name</label>
+          <input id="tf-name" type="text" required placeholder="e.g. Abeta Pharmacy" />
+        </div>
+        <div class="field-group">
+          <label for="tf-description">Description</label>
+          <input id="tf-description" type="text" placeholder="Optional tenant summary" />
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" data-close-modal="modal-tenant">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Tenant</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Modal 7: Brand Splash & Token Overrides ───────────────────────────── -->
+  <div id="modal-brand-config" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-brand-config-title" hidden>
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <h3 id="modal-brand-config-title">Dynamic Splash &amp; Design Token Overrides</h3>
+        <button type="button" class="btn-icon-xs modal-close" data-close-modal="modal-brand-config" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="segmented-control brand-tabs" role="tablist">
+          <button id="brand-tab-splash" type="button" class="seg-btn active" role="tab" aria-selected="true">Splash Configs</button>
+          <button id="brand-tab-tokens" type="button" class="seg-btn" role="tab" aria-selected="false">Token Overrides</button>
+        </div>
+
+        <div id="brand-panel-splash" class="brand-panel">
+          <div id="splash-list" class="item-list compact-list"></div>
+          <form id="splash-form" class="config-subbox">
+            <div class="subbox-title">Add / Update Splash Config</div>
+            <div class="field-row">
+              <div class="field-group">
+                <label for="sp-key">Key</label>
+                <input id="sp-key" type="text" required placeholder="festival-splash" />
+              </div>
+              <div class="field-group">
+                <label for="sp-bg-hex">Background Hex</label>
+                <input id="sp-bg-hex" type="text" value="#0B101B" required />
+              </div>
+              <div class="field-group">
+                <label for="sp-duration">Duration (ms)</label>
+                <input id="sp-duration" type="number" value="1600" min="300" max="6000" />
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field-group">
+                <label for="sp-image-url">Splash Image URL</label>
+                <input id="sp-image-url" type="text" required placeholder="https://cdn.abeta.dev/splash/hero.png" />
+              </div>
+              <div class="field-group">
+                <label for="sp-rule-id">Targeting Rule</label>
+                <select id="sp-rule-id"><option value="">Always / Default</option></select>
+              </div>
+            </div>
+            <div class="field-row">
+              <label class="checkbox-row"><input id="sp-default" type="checkbox" /><span>Default splash</span></label>
+              <label class="checkbox-row"><input id="sp-enabled" type="checkbox" checked /><span>Enabled</span></label>
+              <button type="submit" class="btn btn-xs btn-primary">Save Splash</button>
+            </div>
+          </form>
+        </div>
+
+        <div id="brand-panel-tokens" class="brand-panel" hidden>
+          <div id="token-list" class="item-list compact-list"></div>
+          <form id="token-form" class="config-subbox">
+            <div class="subbox-title">Add / Update Token Override</div>
+            <div class="field-row">
+              <div class="field-group">
+                <label for="tk-key">Key</label>
+                <input id="tk-key" type="text" required placeholder="diwali-gold-theme" />
+              </div>
+              <div class="field-group">
+                <label for="tk-preset">Theme Preset</label>
+                <input id="tk-preset" type="text" value="abeta-fresh" required />
+              </div>
+              <div class="field-group">
+                <label for="tk-rule-id">Targeting Rule</label>
+                <select id="tk-rule-id"><option value="">Global</option></select>
+              </div>
+            </div>
+            <div class="field-group">
+              <label for="tk-tokens-json">Token Overrides JSON</label>
+              <textarea id="tk-tokens-json" class="code-textarea mono" rows="4" spellcheck="false">{
+  "brand.primary": "#10B981",
+  "accent.primary": "#F59E0B"
+}</textarea>
+            </div>
+            <div id="tk-json-error" class="form-error" hidden></div>
+            <div class="field-row">
+              <label class="checkbox-row"><input id="tk-enabled" type="checkbox" checked /><span>Enabled</span></label>
+              <button type="submit" class="btn btn-xs btn-primary">Save Token Override</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Toast Notifications ───────────────────────────────────────────────── -->
+  <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="/studio/app.js" defer></script>
+</body>
+</html>

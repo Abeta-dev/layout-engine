@@ -1,0 +1,37 @@
+# =============================================================================
+# CODEOWNERS for Abeta-dev/layout-engine
+# Maps repository paths to human review teams and the dedicated AI owner
+# persona at agents/layout-engine-owner.md.
+# =============================================================================
+
+# Default repository fallback -> agents/layout-engine-owner.md
+* @Abeta-dev/layout-engine-maintainers
+
+# --- Core Go Clean Architecture Service & Migrations ---
+/cmd/                    @Abeta-dev/layout-engine-maintainers  # Agent: agents/layout-engine-owner.md
+/internal/domain/        @Abeta-dev/layout-engine-maintainers  # Agent: agents/layout-engine-owner.md
+/internal/engine/        @Abeta-dev/layout-engine-maintainers  # Agent: agents/layout-engine-owner.md
+/internal/usecase/       @Abeta-dev/layout-engine-maintainers  # Agent: agents/layout-engine-owner.md
+/internal/handler/       @Abeta-dev/layout-engine-maintainers  # Agent: agents/layout-engine-owner.md
+/internal/infra/         @Abeta-dev/layout-engine-maintainers  # Agent: agents/layout-engine-owner.md
+/pkg/                    @Abeta-dev/layout-engine-maintainers  # Agent: agents/layout-engine-owner.md
+/migrations/             @Abeta-dev/layout-engine-maintainers  # Agent: agents/layout-engine-owner.md
+/go.mod                  @Abeta-dev/layout-engine-maintainers  # Agent: agents/layout-engine-owner.md
+/go.sum                  @Abeta-dev/layout-engine-maintainers  # Agent: agents/layout-engine-owner.md
+
+# --- Containers, CI/CD, Scripts & Security ---
+/.github/                @Abeta-dev/platform-cicd-owners       # Agent: agents/layout-engine-owner.md
+/scripts/                @Abeta-dev/platform-cicd-owners       # Agent: agents/layout-engine-owner.md
+/Dockerfile              @Abeta-dev/platform-cicd-owners       # Agent: agents/layout-engine-owner.md
+/docker-compose.yaml     @Abeta-dev/platform-cicd-owners       # Agent: agents/layout-engine-owner.md
+/Makefile                @Abeta-dev/platform-cicd-owners       # Agent: agents/layout-engine-owner.md
+/.gitleaks.toml          @Abeta-dev/platform-cicd-owners       # Agent: agents/layout-engine-owner.md
+
+# --- Documentation, Skills & Agent Instructions ---
+/docs/                   @Abeta-dev/layout-engine-maintainers  # Agent: agents/layout-engine-owner.md
+/skills/                 @Abeta-dev/layout-engine-maintainers  # Agent: agents/layout-engine-owner.md
+/agents/                 @Abeta-dev/layout-engine-maintainers  # Agent: agents/layout-engine-owner.md
+/AGENTS.md               @Abeta-dev/layout-engine-maintainers  # Agent: agents/layout-engine-owner.md
+/CLAUDE.md               @Abeta-dev/layout-engine-maintainers  # Agent: agents/layout-engine-owner.md
+/GEMINI.md               @Abeta-dev/layout-engine-maintainers  # Agent: agents/layout-engine-owner.md
+/README.md               @Abeta-dev/layout-engine-maintainers  # Agent: agents/layout-engine-owner.md
