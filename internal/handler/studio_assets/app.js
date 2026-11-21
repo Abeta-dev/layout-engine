@@ -1,6 +1,26 @@
 (() => {
   'use strict';
 
+  const CANONICAL_SNIPPET_TYPES = [
+    'accordion',
+    'action_row',
+    'banner_v1',
+    'card_v1',
+    'carousel',
+    'chip_group',
+    'divider',
+    'empty_state',
+    'form_v1',
+    'grid',
+    'header_v1',
+    'metric_card',
+    'product_card',
+    'search_bar',
+    'spacer',
+    'swipe_deck',
+    'tabs',
+  ];
+
   const state = {
     tenant: 'abeta-fresh',
     tenants: [],
@@ -21,9 +41,19 @@
     previewDraft: true,
     previewResult: null,
     cartCounts: {},
+    deckIndex: {},
+    searchQueries: {},
+    chipSelections: {},
     dragIndex: null,
     previewTimer: null,
   };
+
+  function resetPreviewInteractions() {
+    state.cartCounts = {};
+    state.deckIndex = {};
+    state.searchQueries = {};
+    state.chipSelections = {};
+  }
 
   const $ = (id) => document.getElementById(id);
 
@@ -83,9 +113,9 @@
       case 'header_v1': case 'banner_v1': return 'badge-emerald';
       case 'product_card': case 'metric_card': return 'badge-amber';
       case 'grid': case 'carousel': case 'tabs': case 'accordion': return 'badge-sky';
-      case 'form_v1': case 'action_row': return 'badge-violet';
-      case 'card_v1': return 'badge-teal';
-      case 'empty_state': return 'badge-rose';
+      case 'form_v1': case 'action_row': case 'chip_group': return 'badge-violet';
+      case 'card_v1': case 'search_bar': return 'badge-teal';
+      case 'empty_state': case 'swipe_deck': return 'badge-rose';
       default: return 'badge-neutral';
     }
   }
@@ -144,6 +174,9 @@
     try {
       const tData = await api('GET', '/api/v1/studio/tenants');
       state.tenants = tData?.tenants || [];
+      if (state.tenants.length > 0 && !state.tenants.some((t) => t.slug === state.tenant)) {
+        state.tenant = state.tenants[0].slug;
+      }
       renderTenants();
 
       const [tpls, wids, lays, rules, slots, chg, spl, tok] = await Promise.all([
@@ -166,18 +199,26 @@
       state.splash = spl?.splash_configs || [];
       state.tokens = tok?.token_overrides || [];
 
-      if (!state.layouts.some((l) => l.slug === state.activeSlug) && state.layouts.length > 0) {
-        state.activeSlug = state.layouts[0].slug;
-      }
-      if (state.activeSlug) {
+      if (state.layouts.length === 0) {
+        state.activeSlug = '';
+        state.activeLayout = null;
+        state.previewResult = null;
+      } else {
+        if (!state.layouts.some((l) => l.slug === state.activeSlug)) {
+          state.activeSlug = state.layouts[0].slug;
+        }
         const active = state.layouts.find((l) => l.slug === state.activeSlug);
         state.activeLayout = active ? structuredClone(active) : null;
       }
+      if ($('tk-preset')) $('tk-preset').value = state.tenant;
+      if ($('ns-layout-slug')) $('ns-layout-slug').value = state.activeSlug || '';
       setDirty(false);
       populateSelects();
       renderAll();
       if (state.activeLayout) {
         await refreshPreview();
+      } else {
+        renderEmptyPreview();
       }
     } catch (err) {
       toast(`Failed to load studio workspace: ${err.message}`, 'error');
@@ -187,17 +228,27 @@
   function renderTenants() {
     const sel = $('tenant-select');
     if (!sel) return;
+    if (state.tenants.length === 0) {
+      sel.innerHTML = `<option value="${esc(state.tenant)}" selected>${esc(state.tenant)}</option>`;
+      sel.value = state.tenant;
+      return;
+    }
     sel.innerHTML = state.tenants
       .map((t) => `<option value="${esc(t.slug)}" ${t.slug === state.tenant ? 'selected' : ''}>${esc(t.name)} (${esc(t.slug)})</option>`)
       .join('');
+    sel.value = state.tenant;
   }
 
   function populateSelects() {
     const typeFilter = $('widget-type-filter');
-    const types = [...new Set(state.templates.map((t) => t.snippet_type).concat(state.widgets.map((w) => w.snippet_type)))].sort();
+    const types = [...new Set([
+      ...CANONICAL_SNIPPET_TYPES,
+      ...state.templates.map((t) => t.snippet_type),
+      ...state.widgets.map((w) => w.snippet_type),
+    ].filter(Boolean))].sort();
     if (typeFilter) {
       const cur = typeFilter.value;
-      typeFilter.innerHTML = `<option value="">All 14 snippet types</option>` +
+      typeFilter.innerHTML = `<option value="">All ${types.length} snippet types</option>` +
         types.map((t) => `<option value="${esc(t)}" ${t === cur ? 'selected' : ''}>${esc(t)}</option>`).join('');
     }
     const wfTpl = $('wf-template');
@@ -207,7 +258,8 @@
     }
     const wfType = $('wf-snippet-type');
     if (wfType) {
-      wfType.innerHTML = types.map((t) => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
+      const curType = wfType.value;
+      wfType.innerHTML = types.map((t) => `<option value="${esc(t)}" ${t === curType ? 'selected' : ''}>${esc(t)}</option>`).join('');
     }
 
     const ruleOpts = `<option value="">No targeting rule (always match)</option>` +
@@ -260,13 +312,17 @@
       }
     }
     const meta = $('stage-layout-meta');
-    if (meta && l) {
-      const mode = l.page_config?.adaptive_layout?.layout_mode || 'single_column';
-      const cart = l.page_config?.floating_cart ? ' • Floating Cart' : '';
-      meta.textContent = `${l.title} • ${mode}${cart}`;
+    if (meta) {
+      if (l) {
+        const mode = l.page_config?.adaptive_layout?.layout_mode || 'single_column';
+        const cart = l.page_config?.floating_cart ? ' • Floating Cart' : '';
+        meta.textContent = `${l.title} • ${mode}${cart}`;
+      } else {
+        meta.textContent = '';
+      }
     }
     if ($('slotting-layout-label')) $('slotting-layout-label').textContent = l ? l.slug : 'all';
-    if ($('ns-layout-slug') && l && !$('ns-layout-slug').value) $('ns-layout-slug').value = l.slug;
+    if ($('ns-layout-slug') && l) $('ns-layout-slug').value = l.slug;
   }
 
   // ── Left Rail Renderers ─────────────────────────────────────────────────────
@@ -407,7 +463,12 @@
   function renderComposer() {
     const host = $('slot-list');
     const l = state.activeLayout;
-    if (!host || !l) return;
+    if (!host) return;
+    if (!l) {
+      if ($('composer-slot-count')) $('composer-slot-count').textContent = '0 slots';
+      host.innerHTML = `<div class="empty-state">No dynamic layouts in ${esc(state.tenant)} yet. Create a page in the left rail to start composing.</div>`;
+      return;
+    }
     const slots = l.slots || [];
     if ($('composer-slot-count')) $('composer-slot-count').textContent = `${slots.length} slot${slots.length === 1 ? '' : 's'}`;
     if (slots.length === 0) {
@@ -422,7 +483,14 @@
         !slot.enabled ? 'slot-disabled' : '',
         slot.pinned ? 'slot-pinned' : '',
       ].filter(Boolean).join(' ');
-      const titlePreview = w?.props?.title?.text || w?.props?.label?.text || w?.props?.headline || w?.slug || '';
+      const titlePreview = textOf(w?.props?.title)
+        || textOf(w?.props?.label)
+        || w?.props?.placeholder
+        || (Array.isArray(w?.props?.cards) ? `${w.props.cards.length} discovery card${w.props.cards.length === 1 ? '' : 's'}` : '')
+        || (Array.isArray(w?.props?.chips) ? `${w.props.chips.length} filter chip${w.props.chips.length === 1 ? '' : 's'}` : '')
+        || w?.props?.headline
+        || w?.slug
+        || '';
       const chips = [];
       if (r) chips.push(`<span class="mini-chip badge-sky">Rule: ${esc(r.name)}</span>`);
       if (slot.schedule && slot.schedule.start_hour_utc != null) {
@@ -490,10 +558,25 @@
     });
   }
 
-  // ── Center Canvas — Live Device Preview (All 14 KMP v1 Snippets) ────────────
+  // ── Center Canvas — Live Device Preview (All 17 KMP v1 Snippets) ────────────
+
+  function renderEmptyPreview() {
+    const screen = $('device-screen');
+    const frame = $('device-frame');
+    if (frame) frame.className = `device-frame device-${state.device}`;
+    if (screen) {
+      screen.className = `device-screen ${$('ctx-dark-mode')?.checked ? 'kmp-dark' : ''}`;
+      screen.innerHTML = `<div class="kmp-scroll-body"><div class="kmp-empty-state"><div class="kmp-h-title">No layout selected</div><div class="kmp-h-sub">Select or create a dynamic layout in ${esc(state.tenant)}.</div></div></div>`;
+    }
+    if ($('json-viewer')) $('json-viewer').textContent = '{}';
+    if ($('json-meta-stats')) $('json-meta-stats').textContent = '0 snippets • 0.0 KB';
+  }
 
   async function refreshPreview() {
-    if (!state.activeSlug) return;
+    if (!state.activeSlug) {
+      renderEmptyPreview();
+      return;
+    }
     const spinner = $('preview-spinner');
     if (spinner) spinner.hidden = false;
     try {
@@ -521,6 +604,27 @@
     if (!atom) return '';
     if (typeof atom === 'string') return atom;
     return atom.text || '';
+  }
+
+  function previewIconGlyph(icon) {
+    const name = (typeof icon === 'string' ? icon : icon?.name || '').toLowerCase();
+    switch (name) {
+      case 'search': return '🔍';
+      case 'mic': return '🎙';
+      case 'tune': case 'filter_list': case 'sliders': return '⚙';
+      case 'bolt': case 'flash_on': return '⚡';
+      case 'local_fire_department': case 'flame': case 'whatshot': return '🔥';
+      case 'eco': case 'leaf': return '🌿';
+      case 'star': case 'grade': return '★';
+      case 'location_on': case 'place': case 'pin': return '📍';
+      case 'schedule': case 'timer': return '⏱';
+      case 'verified': case 'check_circle': return '✓';
+      case 'restaurant': case 'fastfood': return '🍽';
+      case 'shopping_bag': case 'storefront': return '🛍';
+      case 'music_note': case 'confirmation_number': return '♪';
+      case 'trending_up': return '↗';
+      default: return name ? '•' : '';
+    }
   }
 
   function renderSnippet(env) {
@@ -621,16 +725,31 @@
         const tabs = d.tabs || [];
         const activeIdx = Math.min(d.selected_index || 0, Math.max(0, tabs.length - 1));
         const activeTab = tabs[activeIdx];
+        const tabSnippets = activeTab ? (activeTab.snippets || activeTab.items || []) : [];
         return `
           <div>
             <div class="kmp-tabs-bar">
               ${tabs.map((t, i) => `<button type="button" class="kmp-tab-pill ${i === activeIdx ? 'active' : ''}">${esc(t.title || t.id)}</button>`).join('')}
             </div>
-            <div class="kmp-tabs-body">${activeTab ? (activeTab.items || []).map(renderSnippet).join('') : ''}</div>
+            <div class="kmp-tabs-body">${tabSnippets.map(renderSnippet).join('')}</div>
           </div>`;
       }
 
-      case 'accordion':
+      case 'accordion': {
+        if (Array.isArray(d.snippets) || d.title) {
+          const expanded = d.initially_expanded !== false;
+          return `
+            <div class="kmp-accordion">
+              <div class="kmp-accordion-head">
+                <div>
+                  <div>${esc(textOf(d.title))}</div>
+                  ${d.subtitle ? `<div class="kmp-h-sub">${esc(textOf(d.subtitle))}</div>` : ''}
+                </div>
+                <span>${expanded ? '▾' : '▸'}</span>
+              </div>
+              ${expanded ? `<div class="kmp-accordion-body">${(d.snippets || []).map(renderSnippet).join('')}</div>` : ''}
+            </div>`;
+        }
         return `
           <div class="kmp-accordion">
             ${(d.items || []).map((it, i) => `
@@ -639,6 +758,106 @@
                 ${i === 0 ? `<div class="kmp-accordion-body">${esc(textOf(it.body))}${(it.content || []).map(renderSnippet).join('')}</div>` : ''}
               </div>`).join('')}
           </div>`;
+      }
+
+      case 'swipe_deck': {
+        const deckId = d.deck_id || env.snippet_id || 'deck';
+        const cards = Array.isArray(d.cards) ? d.cards : [];
+        const idx = Math.max(0, state.deckIndex[deckId] || 0);
+        if (cards.length === 0 || idx >= cards.length) {
+          return `
+            <div class="kmp-swipe-deck">
+              <div class="kmp-swipe-empty">
+                <div class="kmp-swipe-empty-icon" aria-hidden="true">✦</div>
+                <div class="kmp-h-title">${esc(textOf(d.empty_title) || "You're all caught up")}</div>
+                <div class="kmp-h-sub">${esc(textOf(d.empty_message) || 'No more discovery cards in this deck.')}</div>
+                ${cards.length > 0 ? `<button type="button" class="kmp-btn kmp-btn-secondary" data-swipe-reset="${esc(deckId)}">Replay Deck (${cards.length})</button>` : ''}
+              </div>
+            </div>`;
+        }
+        const card = cards[idx];
+        const remaining = cards.length - idx;
+        const cardTitle = textOf(card.title) || card.card_id || 'Profile';
+        const badgeLabel = card.badge ? (card.badge.label || textOf(card.badge)) : '';
+        const distance = textOf(card.distance_text);
+        const tags = Array.isArray(card.tags) ? card.tags : [];
+        return `
+          <div class="kmp-swipe-deck">
+            <div class="kmp-swipe-stack">
+              ${remaining > 2 ? '<div class="kmp-swipe-underlay kmp-swipe-underlay-2" aria-hidden="true"></div>' : ''}
+              ${remaining > 1 ? '<div class="kmp-swipe-underlay kmp-swipe-underlay-1" aria-hidden="true"></div>' : ''}
+              <article class="kmp-swipe-card kmp-swipe-grad-${idx % 4}">
+                <div class="kmp-swipe-media">
+                  ${card.image?.url ? `<img src="${esc(card.image.url)}" alt="${esc(card.image.content_description || cardTitle)}" />` : ''}
+                  <div class="kmp-swipe-scrim" aria-hidden="true"></div>
+                  <div class="kmp-swipe-media-top">
+                    ${badgeLabel ? `<span class="kmp-swipe-badge">${esc(badgeLabel)}</span>` : '<span></span>'}
+                    <div class="kmp-swipe-media-pills">
+                      ${distance ? `<span class="kmp-swipe-distance">📍 ${esc(distance)}</span>` : ''}
+                      <span class="kmp-swipe-counter">${idx + 1}/${cards.length}</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="kmp-swipe-body">
+                  <div class="kmp-swipe-title">${esc(cardTitle)}</div>
+                  ${card.subtitle ? `<div class="kmp-swipe-sub">${esc(textOf(card.subtitle))}</div>` : ''}
+                  ${card.bio ? `<div class="kmp-swipe-bio">${esc(textOf(card.bio))}</div>` : ''}
+                  ${tags.length ? `<div class="kmp-swipe-tags">${tags.slice(0, 6).map((t) => `<span class="kmp-swipe-tag">${esc(t?.label || textOf(t))}</span>`).join('')}</div>` : ''}
+                </div>
+              </article>
+            </div>
+            <div class="kmp-swipe-actions">
+              ${idx > 0 ? `<button type="button" class="kmp-swipe-btn kmp-swipe-btn-undo" data-swipe-undo="${esc(deckId)}" title="Undo" aria-label="Undo">↺</button>` : ''}
+              <button type="button" class="kmp-swipe-btn kmp-swipe-btn-nope" data-swipe-deck="${esc(deckId)}" data-swipe-dir="nope" data-swipe-title="${esc(cardTitle)}" title="${esc(d.nope_label || 'Nope')}" aria-label="${esc(d.nope_label || 'Nope')}">✕</button>
+              <button type="button" class="kmp-swipe-btn kmp-swipe-btn-super" data-swipe-deck="${esc(deckId)}" data-swipe-dir="super_like" data-swipe-title="${esc(cardTitle)}" title="${esc(d.super_like_label || 'Super Like')}" aria-label="${esc(d.super_like_label || 'Super Like')}">★</button>
+              <button type="button" class="kmp-swipe-btn kmp-swipe-btn-like" data-swipe-deck="${esc(deckId)}" data-swipe-dir="like" data-swipe-title="${esc(cardTitle)}" title="${esc(d.like_label || 'Like')}" aria-label="${esc(d.like_label || 'Like')}">♥</button>
+            </div>
+          </div>`;
+      }
+
+      case 'search_bar': {
+        const searchId = d.search_id || env.snippet_id || 'search';
+        const queryVal = searchId in state.searchQueries ? state.searchQueries[searchId] : (d.query || '');
+        const placeholder = d.placeholder || 'Search...';
+        const clearable = d.clearable !== false;
+        const trailingGlyph = d.trailing_icon ? previewIconGlyph(d.trailing_icon) : '';
+        return `
+          <div class="kmp-search-bar" data-search-wrap="${esc(searchId)}">
+            <span class="kmp-search-icon" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="7.5"></circle>
+                <line x1="20" y1="20" x2="16.4" y2="16.4"></line>
+              </svg>
+            </span>
+            <input type="text" class="kmp-search-input" data-search-input="${esc(searchId)}" value="${esc(queryVal)}" placeholder="${esc(placeholder)}" aria-label="${esc(placeholder)}" />
+            ${clearable ? `<button type="button" class="kmp-search-clear" data-search-clear="${esc(searchId)}" aria-label="Clear search" ${queryVal ? '' : 'hidden'}>✕</button>` : ''}
+            ${trailingGlyph && !d.submit_label ? `<span class="kmp-search-trailing" aria-hidden="true">${esc(trailingGlyph)}</span>` : ''}
+            ${d.submit_label ? `<button type="button" class="kmp-search-submit" data-search-submit="${esc(searchId)}">${esc(d.submit_label)}</button>` : ''}
+          </div>`;
+      }
+
+      case 'chip_group': {
+        const groupId = d.group_id || env.snippet_id || 'chips';
+        const chips = Array.isArray(d.chips) ? d.chips : [];
+        const selectedSet = state.chipSelections[groupId]
+          || new Set(chips.filter((c) => c.selected).map((c) => c.id));
+        return `
+          <div class="kmp-chip-group">
+            ${d.title ? `<div class="kmp-section-title">${esc(textOf(d.title))}</div>` : ''}
+            <div class="kmp-chip-row" role="group" aria-label="${esc(textOf(d.title) || groupId)}">
+              ${chips.map((c) => {
+                const isSel = selectedSet.has(c.id);
+                const glyph = c.icon ? previewIconGlyph(c.icon) : '';
+                return `
+                  <button type="button" class="kmp-chip-pill ${isSel ? 'selected' : ''}" data-chip-group="${esc(groupId)}" data-chip-id="${esc(c.id)}" data-chip-multi="${d.multi_select ? '1' : '0'}" aria-pressed="${isSel ? 'true' : 'false'}">
+                    ${glyph ? `<span class="kmp-chip-icon" aria-hidden="true">${esc(glyph)}</span>` : ''}
+                    <span class="kmp-chip-label">${esc(c.label || c.id)}</span>
+                    ${c.badge ? `<span class="kmp-chip-badge">${esc(c.badge)}</span>` : ''}
+                  </button>`;
+              }).join('')}
+            </div>
+          </div>`;
+      }
 
       case 'card_v1':
         return `
@@ -810,6 +1029,8 @@
     state.activeSlug = slug;
     const found = state.layouts.find((l) => l.slug === slug);
     state.activeLayout = found ? structuredClone(found) : null;
+    resetPreviewInteractions();
+    if ($('validation-banner')) $('validation-banner').hidden = true;
     setDirty(false);
     renderAll();
     await refreshPreview();
@@ -998,6 +1219,13 @@
     // Tenant change & creation
     $('tenant-select')?.addEventListener('change', (e) => {
       state.tenant = e.target.value;
+      state.activeSlug = '';
+      state.activeLayout = null;
+      state.previewResult = null;
+      resetPreviewInteractions();
+      if ($('validation-banner')) $('validation-banner').hidden = true;
+      if ($('widget-search')) $('widget-search').value = '';
+      if ($('widget-type-filter')) $('widget-type-filter').value = '';
       loadAll();
     });
     $('btn-new-tenant')?.addEventListener('click', () => openModal('modal-tenant'));
@@ -1011,6 +1239,10 @@
           active: true,
         });
         state.tenant = saved.slug;
+        state.activeSlug = '';
+        state.activeLayout = null;
+        state.previewResult = null;
+        resetPreviewInteractions();
         closeModal('modal-tenant');
         toast(`Created tenant ${saved.slug}`, 'success');
         await loadAll();
@@ -1545,6 +1777,62 @@
         if (state.previewResult?.page) renderDevicePreview(state.previewResult.page);
         return;
       }
+      if (target.dataset.swipeDeck) {
+        const deckId = target.dataset.swipeDeck;
+        const dir = target.dataset.swipeDir || 'like';
+        const title = target.dataset.swipeTitle || 'card';
+        state.deckIndex[deckId] = (state.deckIndex[deckId] || 0) + 1;
+        const labels = { like: 'Liked', nope: 'Passed', super_like: 'Super Liked' };
+        toast(`${labels[dir] || 'Swiped'} ${title}`, dir === 'nope' ? 'info' : 'success');
+        if (state.previewResult?.page) renderDevicePreview(state.previewResult.page);
+        return;
+      }
+      if (target.dataset.swipeUndo) {
+        const deckId = target.dataset.swipeUndo;
+        state.deckIndex[deckId] = Math.max(0, (state.deckIndex[deckId] || 0) - 1);
+        if (state.previewResult?.page) renderDevicePreview(state.previewResult.page);
+        return;
+      }
+      if (target.dataset.swipeReset) {
+        const deckId = target.dataset.swipeReset;
+        state.deckIndex[deckId] = 0;
+        if (state.previewResult?.page) renderDevicePreview(state.previewResult.page);
+        return;
+      }
+      if (target.dataset.searchClear) {
+        const searchId = target.dataset.searchClear;
+        state.searchQueries[searchId] = '';
+        if (state.previewResult?.page) renderDevicePreview(state.previewResult.page);
+        return;
+      }
+      if (target.dataset.searchSubmit) {
+        const searchId = target.dataset.searchSubmit;
+        const q = (state.searchQueries[searchId] || '').trim();
+        toast(q ? `Preview search: "${q}"` : 'Preview search submitted', 'info');
+        return;
+      }
+      if (target.dataset.chipGroup) {
+        const groupId = target.dataset.chipGroup;
+        const chipId = target.dataset.chipId;
+        const isMulti = target.dataset.chipMulti === '1';
+        let set = state.chipSelections[groupId];
+        if (!set) {
+          set = new Set();
+          document.querySelectorAll(`[data-chip-group="${CSS.escape(groupId)}"].selected`).forEach((btn) => {
+            if (btn.dataset.chipId) set.add(btn.dataset.chipId);
+          });
+          state.chipSelections[groupId] = set;
+        }
+        if (isMulti) {
+          if (set.has(chipId)) set.delete(chipId);
+          else set.add(chipId);
+        } else {
+          set.clear();
+          set.add(chipId);
+        }
+        if (state.previewResult?.page) renderDevicePreview(state.previewResult.page);
+        return;
+      }
       if (target.dataset.expressCheckout) {
         try {
           const res = await api('POST', '/api/v1/orders/express', { cart: state.cartCounts });
@@ -1553,6 +1841,24 @@
           if (state.previewResult?.page) renderDevicePreview(state.previewResult.page);
         } catch (err) { toast(err.message, 'error'); }
       }
+    });
+
+    // Live interactive preview input bindings for search_bar snippets
+    document.addEventListener('input', (e) => {
+      const inp = e.target.closest?.('[data-search-input]');
+      if (!inp) return;
+      const searchId = inp.dataset.searchInput;
+      state.searchQueries[searchId] = inp.value;
+      const wrap = inp.closest('[data-search-wrap]');
+      const clearBtn = wrap?.querySelector('[data-search-clear]');
+      if (clearBtn) clearBtn.hidden = !inp.value;
+    });
+    document.addEventListener('keydown', (e) => {
+      const inp = e.target.closest?.('[data-search-input]');
+      if (!inp || e.key !== 'Enter') return;
+      e.preventDefault();
+      const q = inp.value.trim();
+      toast(q ? `Preview search: "${q}"` : 'Preview search submitted', 'info');
     });
   }
 

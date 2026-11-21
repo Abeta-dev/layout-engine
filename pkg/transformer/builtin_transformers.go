@@ -11,7 +11,7 @@ import (
 )
 
 // NewDefaultRegistry constructs a Registry pre-populated with transformers for all
-// 14 Abeta KMP v1 SnippetTypes.
+// 17 Abeta KMP v1 SnippetTypes.
 func NewDefaultRegistry() *Registry {
 	reg := NewRegistry()
 
@@ -29,6 +29,9 @@ func NewDefaultRegistry() *Registry {
 	reg.Register(NewWidgetTransformerFunc(snippets.SnippetTypeTabs, transformTabs))
 	reg.Register(NewWidgetTransformerFunc(snippets.SnippetTypeAccordion, transformAccordion))
 	reg.Register(NewWidgetTransformerFunc(snippets.SnippetTypeProductCard, transformProductCard))
+	reg.Register(NewWidgetTransformerFunc(snippets.SnippetTypeSwipeDeck, transformSwipeDeck))
+	reg.Register(NewWidgetTransformerFunc(snippets.SnippetTypeSearchBar, transformSearchBar))
+	reg.Register(NewWidgetTransformerFunc(snippets.SnippetTypeChipGroup, transformChipGroup))
 
 	return reg
 }
@@ -296,6 +299,95 @@ func transformTabs(input TransformInput) (snippets.SnippetEnvelope, error) {
 		Layout:        raw.Layout,
 	}
 	return wrapEnvelope(input, snippets.SnippetTypeTabs, data), nil
+}
+
+// ── Built-In Interactive & Discovery Snippet Transformers (3 types) ────────────
+
+func transformSwipeDeck(input TransformInput) (snippets.SnippetEnvelope, error) {
+	props := cloneProps(input.Props)
+	promoteTextFields(props, "empty_title", "empty_message")
+
+	promoteCard := func(cardMap map[string]any) {
+		promoteTextFields(cardMap, "title", "subtitle", "bio", "distance_text")
+		promoteTagFields(cardMap, "badge")
+		promoteImageFields(cardMap, "image")
+		promoteTagSliceField(cardMap, "tags")
+	}
+
+	switch cards := props["cards"].(type) {
+	case []any:
+		for _, elem := range cards {
+			if cardMap, ok := elem.(map[string]any); ok {
+				promoteCard(cardMap)
+			}
+		}
+	case []map[string]any:
+		for _, cardMap := range cards {
+			promoteCard(cardMap)
+		}
+	}
+
+	var data snippets.SwipeDeckSnippetData
+	if err := decodeMapToStruct(props, &data); err != nil {
+		return snippets.SnippetEnvelope{}, fmt.Errorf("transformer: decode %s: %w", snippets.SnippetTypeSwipeDeck, err)
+	}
+	if strings.TrimSpace(data.DeckID) == "" {
+		data.DeckID = resolveSnippetID(input)
+	}
+	if data.Cards == nil {
+		data.Cards = []snippets.SwipeCardItem{}
+	}
+	return wrapEnvelope(input, snippets.SnippetTypeSwipeDeck, data), nil
+}
+
+func transformSearchBar(input TransformInput) (snippets.SnippetEnvelope, error) {
+	props := cloneProps(input.Props)
+	promoteIconFields(props, "leading_icon", "trailing_icon")
+
+	var data snippets.SearchBarSnippetData
+	if err := decodeMapToStruct(props, &data); err != nil {
+		return snippets.SnippetEnvelope{}, fmt.Errorf("transformer: decode %s: %w", snippets.SnippetTypeSearchBar, err)
+	}
+	if strings.TrimSpace(data.SearchID) == "" {
+		data.SearchID = resolveSnippetID(input)
+	}
+	if strings.TrimSpace(data.Placeholder) == "" {
+		data.Placeholder = "Search..."
+	}
+	if raw, exists := props["clearable"]; !exists || raw == nil {
+		data.Clearable = true
+	}
+	return wrapEnvelope(input, snippets.SnippetTypeSearchBar, data), nil
+}
+
+func transformChipGroup(input TransformInput) (snippets.SnippetEnvelope, error) {
+	props := cloneProps(input.Props)
+	promoteTextFields(props, "title")
+
+	switch chips := props["chips"].(type) {
+	case []any:
+		for _, elem := range chips {
+			if chipMap, ok := elem.(map[string]any); ok {
+				promoteIconFields(chipMap, "icon")
+			}
+		}
+	case []map[string]any:
+		for _, chipMap := range chips {
+			promoteIconFields(chipMap, "icon")
+		}
+	}
+
+	var data snippets.ChipGroupSnippetData
+	if err := decodeMapToStruct(props, &data); err != nil {
+		return snippets.SnippetEnvelope{}, fmt.Errorf("transformer: decode %s: %w", snippets.SnippetTypeChipGroup, err)
+	}
+	if strings.TrimSpace(data.GroupID) == "" {
+		data.GroupID = resolveSnippetID(input)
+	}
+	if data.Chips == nil {
+		data.Chips = []snippets.FilterChipItem{}
+	}
+	return wrapEnvelope(input, snippets.SnippetTypeChipGroup, data), nil
 }
 
 // ── Recursive Child Resolution & Envelope Decoding ─────────────────────────────

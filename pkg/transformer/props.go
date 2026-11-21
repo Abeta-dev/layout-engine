@@ -122,6 +122,13 @@ func deepCloneValue(v any) any {
 			cp[i] = deepCloneValue(elem)
 		}
 		return cp
+	case []map[string]any:
+		cp := make([]map[string]any, len(val))
+		for i, elem := range val {
+			cloned, _ := deepCloneValue(elem).(map[string]any)
+			cp[i] = cloned
+		}
+		return cp
 	case []string:
 		cp := make([]string, len(val))
 		copy(cp, val)
@@ -145,6 +152,13 @@ func interpolateValue(v any, ctx domain.RequestContext) any {
 		out := make([]any, len(val))
 		for i, elem := range val {
 			out[i] = interpolateValue(elem, ctx)
+		}
+		return out
+	case []map[string]any:
+		out := make([]map[string]any, len(val))
+		for i, elem := range val {
+			interpolated, _ := interpolateValue(elem, ctx).(map[string]any)
+			out[i] = interpolated
 		}
 		return out
 	case []string:
@@ -198,6 +212,31 @@ func promoteImageFields(props map[string]any, keys ...string) {
 		if s, ok := props[k].(string); ok {
 			props[k] = map[string]any{"url": s}
 		}
+	}
+}
+
+func promoteTagSliceField(props map[string]any, key string) {
+	raw, exists := props[key]
+	if !exists || raw == nil {
+		return
+	}
+	switch list := raw.(type) {
+	case []string:
+		out := make([]any, len(list))
+		for i, s := range list {
+			out[i] = map[string]any{"label": s}
+		}
+		props[key] = out
+	case []any:
+		out := make([]any, len(list))
+		for i, elem := range list {
+			if s, ok := elem.(string); ok {
+				out[i] = map[string]any{"label": s}
+			} else {
+				out[i] = elem
+			}
+		}
+		props[key] = out
 	}
 }
 

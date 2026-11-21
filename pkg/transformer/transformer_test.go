@@ -14,13 +14,13 @@ import (
 	"github.com/abeta-dev/layout-engine/pkg/transformer"
 )
 
-func TestDefaultRegistry_All14SnippetTypesRoundTrip(t *testing.T) {
+func TestDefaultRegistry_All17SnippetTypesRoundTrip(t *testing.T) {
 	t.Parallel()
 
 	reg := transformer.NewDefaultRegistry()
 	supported := reg.SupportedTypes()
-	if len(supported) != 14 {
-		t.Fatalf("SupportedTypes() len = %d, want 14 (%v)", len(supported), supported)
+	if len(supported) != 17 {
+		t.Fatalf("SupportedTypes() len = %d, want 17 (%v)", len(supported), supported)
 	}
 
 	ctx := domain.RequestContext{
@@ -231,6 +231,52 @@ func TestDefaultRegistry_All14SnippetTypesRoundTrip(t *testing.T) {
 				"child_widget_ids":   []string{"w_action_row"},
 			},
 		},
+		"w_swipe_deck": {
+			ID:          "w_swipe_deck",
+			SnippetType: snippets.SnippetTypeSwipeDeck,
+			Active:      true,
+			Props: map[string]any{
+				"deck_id":       "spark_feed",
+				"empty_title":   "All caught up in {{city}}",
+				"empty_message": "Come back later for more profiles",
+				"cards": []map[string]any{
+					{
+						"card_id":       "card_1",
+						"title":         "Meera, 27",
+						"subtitle":      "Product Designer · {{city}}",
+						"bio":           "Specialty coffee and weekend hikes",
+						"distance_text": "2 km away",
+						"badge":         "VERIFIED",
+						"image":         "https://cdn.abeta.dev/profiles/meera.png",
+						"tags":          []string{"Design", "{{segment}}"},
+					},
+				},
+			},
+		},
+		"w_search_bar": {
+			ID:          "w_search_bar",
+			SnippetType: snippets.SnippetTypeSearchBar,
+			Active:      true,
+			Props: map[string]any{
+				"placeholder":   "Search groceries in {{city}}...",
+				"leading_icon":  "search",
+				"trailing_icon": "mic",
+				"submit_label":  "Go",
+			},
+		},
+		"w_chip_group": {
+			ID:          "w_chip_group",
+			SnippetType: snippets.SnippetTypeChipGroup,
+			Active:      true,
+			Props: map[string]any{
+				"title":        "Filter in {{city}}",
+				"multi_select": true,
+				"chips": []map[string]any{
+					{"id": "all", "label": "All", "selected": true, "badge": "24"},
+					{"id": "fast", "label": "Express {{zone}}", "icon": "bolt", "badge": "8"},
+				},
+			},
+		},
 	}
 
 	slots := []domain.LayoutSlot{
@@ -248,6 +294,9 @@ func TestDefaultRegistry_All14SnippetTypesRoundTrip(t *testing.T) {
 		{SlotID: "s_grid", WidgetID: "w_grid", Position: 11, Enabled: true},
 		{SlotID: "s_tabs", WidgetID: "w_tabs", Position: 12, Enabled: true},
 		{SlotID: "s_accordion", WidgetID: "w_accordion", Position: 13, Enabled: true},
+		{SlotID: "s_swipe_deck", WidgetID: "w_swipe_deck", Position: 14, Enabled: true},
+		{SlotID: "s_search_bar", WidgetID: "w_search_bar", Position: 15, Enabled: true},
+		{SlotID: "s_chip_group", WidgetID: "w_chip_group", Position: 16, Enabled: true},
 	}
 
 	pageCfg := domain.LayoutPageConfig{
@@ -309,12 +358,12 @@ func TestDefaultRegistry_All14SnippetTypesRoundTrip(t *testing.T) {
 	if decoded.Tracking == nil || decoded.Tracking.EventName != "page_view" {
 		t.Fatalf("expected page_view tracking meta, got %+v", decoded.Tracking)
 	}
-	if len(decoded.Snippets) != 14 {
-		t.Fatalf("expected 14 snippets, got %d", len(decoded.Snippets))
+	if len(decoded.Snippets) != 17 {
+		t.Fatalf("expected 17 snippets, got %d", len(decoded.Snippets))
 	}
 
-	// Verify every single one of the 14 snippet types decodes cleanly into its KMP wire struct.
-	seenTypes := make(map[string]bool, 14)
+	// Verify every single one of the 17 snippet types decodes cleanly into its KMP wire struct.
+	seenTypes := make(map[string]bool, 17)
 	for _, env := range decoded.Snippets {
 		seenTypes[env.SnippetType] = true
 		switch env.SnippetType {
@@ -403,11 +452,34 @@ func TestDefaultRegistry_All14SnippetTypesRoundTrip(t *testing.T) {
 			if err != nil || !d.InitiallyExpanded || len(d.Snippets) != 1 {
 				t.Errorf("accordion decode failed: err=%v data=%+v", err, d)
 			}
+		case snippets.SnippetTypeSwipeDeck:
+			d, err := snippets.DecodeSnippetData[snippets.SwipeDeckSnippetData](env)
+			if err != nil || d.DeckID != "spark_feed" || len(d.Cards) != 1 {
+				t.Errorf("swipe_deck decode failed: err=%v data=%+v", err, d)
+			} else if d.Cards[0].Subtitle == nil || d.Cards[0].Subtitle.Text != "Product Designer · Bengaluru" {
+				t.Errorf("swipe_deck card interpolation failed: %+v", d.Cards[0])
+			} else if d.EmptyTitle == nil || d.EmptyTitle.Text != "All caught up in Bengaluru" {
+				t.Errorf("swipe_deck empty_title promotion/interpolation failed: %+v", d.EmptyTitle)
+			}
+		case snippets.SnippetTypeSearchBar:
+			d, err := snippets.DecodeSnippetData[snippets.SearchBarSnippetData](env)
+			if err != nil || d.SearchID != "s_search_bar" || !d.Clearable || d.Placeholder != "Search groceries in Bengaluru..." {
+				t.Errorf("search_bar decode failed: err=%v data=%+v", err, d)
+			} else if d.LeadingIcon == nil || d.LeadingIcon.Name != "search" || d.TrailingIcon == nil || d.TrailingIcon.Name != "mic" {
+				t.Errorf("search_bar icon promotion failed: %+v", d)
+			}
+		case snippets.SnippetTypeChipGroup:
+			d, err := snippets.DecodeSnippetData[snippets.ChipGroupSnippetData](env)
+			if err != nil || d.GroupID != "s_chip_group" || !d.MultiSelect || len(d.Chips) != 2 {
+				t.Errorf("chip_group decode failed: err=%v data=%+v", err, d)
+			} else if d.Title == nil || d.Title.Text != "Filter in Bengaluru" || d.Chips[1].Icon == nil || d.Chips[1].Icon.Name != "bolt" {
+				t.Errorf("chip_group promotion/interpolation failed: %+v", d)
+			}
 		}
 	}
 
-	if len(seenTypes) != 14 {
-		t.Fatalf("expected all 14 snippet types in page, got %d", len(seenTypes))
+	if len(seenTypes) != 17 {
+		t.Fatalf("expected all 17 snippet types in page, got %d", len(seenTypes))
 	}
 
 	// Ensure caller pageCfg was not mutated by interpolation.
@@ -478,8 +550,8 @@ func TestRegistry_CustomOCPTransformerAndCycleGuard(t *testing.T) {
 		},
 	})
 
-	if len(reg.SupportedTypes()) != 15 {
-		t.Fatalf("expected 15 supported types after custom registration, got %d", len(reg.SupportedTypes()))
+	if len(reg.SupportedTypes()) != 18 {
+		t.Fatalf("expected 18 supported types after custom registration, got %d", len(reg.SupportedTypes()))
 	}
 
 	env, err := reg.Transform(transformer.TransformInput{

@@ -9,8 +9,8 @@ This guide explains how product teams and merchandisers author dynamic SDUI scre
 The engine ships with a single-binary embedded Visual Layout Studio SPA served at **`http://localhost:8090/studio`** (embedded via `internal/handler/studio_assets/`—zero separate frontend deployment needed).
 
 From `/studio`, you can:
-1. **Switch Tenants** (`abeta-fresh` or custom workspaces).
-2. **Browse the 14 KMP `v1` Snippet Templates** and inspect/create reusable **Widgets**.
+1. **Switch Tenants** across all **6 pre-seeded vertical workspaces** (`abeta-fresh`, `abeta-bites`, `abeta-pulse`, `abeta-mart`, `abeta-spark`, `abeta-trade`) or custom workspaces.
+2. **Browse all 17 KMP `v1` Snippet Templates** (including `search_bar`, `chip_group`, and `swipe_deck`) and inspect/create reusable **Widgets**.
 3. **Edit Draft Layouts**: reorder slots, bind targeting rules or UTC schedules per slot, lock critical hero banners with `pinned: true`, and configure page-level chrome (`ToolbarSpec`, `FloatingCartSpec`, `AdaptivePageSpec`, `PaginationSpec`, `PullToRefresh`).
 4. **Simulate Live Contexts**: preview either the active **Published Snapshot** or **Draft** (`POST /api/v1/studio/layouts/:slug/preview`) for any combination of platform, app version, city, zone, user segment, user ID, window class, dark mode, custom attributes, and simulated timestamp (`at`).
 5. **Inspect `ResolutionTrace`**: see exact matched rules, applied slotting rules, skipped slots, fallback usage, and resolution latency in milliseconds.
@@ -39,7 +39,7 @@ Calling `POST /api/v1/studio/layouts/:slug/validate` (and automatically during `
 - Non-empty, URL-safe `slug` matching `^[a-z0-9][a-z0-9_-]*$` and non-empty `title`.
 - Valid `page_config.adaptive_layout.layout_mode` (`single_column`, `centered`, or `split_pane`).
 - Unique non-empty `slot_id` across all slots.
-- Every enabled slot references an existing `widget_id` whose `snippet_type` is one of the **14 KMP `v1` SnippetTypes**.
+- Every enabled slot references an existing `widget_id` whose `snippet_type` is one of the **17 KMP `v1` SnippetTypes** (`header_v1`, `banner_v1`, `metric_card`, `card_v1`, `action_row`, `form_v1`, `empty_state`, `divider`, `spacer`, `carousel`, `grid`, `tabs`, `accordion`, `product_card`, `search_bar`, `chip_group`, `swipe_deck`).
 - Positive integer `columns` on `grid` widgets.
 - Valid inline snippet envelopes (`snippet_id` + supported `snippet_type`) on `carousel`, `grid`, `accordion`, and `tabs`.
 - Non-empty `id` and `title` on every tab entry in `tabs`.
@@ -121,19 +121,20 @@ Dynamic `SlottingRule` entries modify a published layout's base slot list at run
 
 ---
 
-## 6. Starter Workspace (`abeta-fresh`)
+## 6. Pre-Seeded Multi-Tenant Vertical Workspaces (6 Tenants · 17 SnippetTypes)
 
-On zero-config boot (`go run ./cmd/layout-engine`), the engine idempotently seeds the **`abeta-fresh`** quick-commerce workspace with:
-- **14** KMP `v1` widget templates covering every supported `SnippetType`
-- **16+** pre-built widgets (headers, promo banners, carousels, category grids, product cards, tabs, accordions, forms, watch cards)
-- **5** targeting rules (covering city/zone, VIP segment, semver app version, platform, and percentage rollout)
-- **2** dynamic slotting rules
-- **5** published dynamic pages with guaranteed fallbacks:
-  - `store-home` — Adaptive quick-commerce storefront with floating cart dock and dynamic slotting
-  - `flash-sale` — Scheduled promotional merchandising screen
-  - `home` — General dashboard screen
-  - `catalog` — Browseable multi-category catalog screen
-  - `watch-status` — Wearable glance screen for watchOS (`AbetaWatchKit`) & Wear OS (`:watch-companion`)
+On zero-config boot (`go run ./cmd/layout-engine`), `SeedDefaultData` idempotently populates **6 multi-tenant vertical workspaces**, each equipped with all **17 canonical KMP `v1` widget templates** (`header_v1`, `banner_v1`, `metric_card`, `card_v1`, `action_row`, `form_v1`, `empty_state`, `divider`, `spacer`, `carousel`, `grid`, `tabs`, `accordion`, `product_card`, `search_bar`, `chip_group`, `swipe_deck`), curated widgets, targeting rules, dynamic slotting rules, immutable `v1` snapshots, guaranteed fallbacks, splash configs, and branded token overrides:
+
+| Tenant Slug | Workspace Name | Published Layouts | Rules & Slotting Highlights |
+| :--- | :--- | :--- | :--- |
+| **`abeta-fresh`** *(default)* | Abeta Fresh — Quick-Commerce Grocery | `store-home`, `fresh-home`, `flash-sale`, `home`, `catalog`, `form-demo`, `containers`, `watch-status` | 5 targeting rules (VIP, Bengaluru, morning window, mobile SemVer, 50% rollout); VIP & morning slotting on `store-home` + VIP slotting on `fresh-home`; `FloatingCartSpec` -> `POST /api/v1/fresh/orders/express` |
+| **`abeta-bites`** | Abeta Bites — Food Delivery & Dining | `bites-home`, `bites-restaurant`, `bites-order-track` | `mumbai_or_vip` (`city == "Mumbai"` OR `segment == "vip"`) and `dinner_rush_window` slotting on `bites-home`; `FloatingCartSpec` -> `POST /api/v1/bites/orders` |
+| **`abeta-pulse`** | Abeta Pulse — Events, Movies & Dining Tickets | `pulse-home`, `pulse-event-detail` | `weekend_spotlight` (Fri–Sun UTC) slotting banner on `pulse-home`; event cards navigating to `pulse-event-detail` with seat-tier booking (`POST /api/v1/pulse/bookings`) |
+| **`abeta-mart`** | Abeta Mart — Multi-Category Marketplace | `mart-home`, `mart-product-detail` | `mart_vip_segment` VIP lightning deal slotting on `mart-home`; Lightning Deals `carousel`, responsive `grid`, and product specs `accordion` |
+| **`abeta-spark`** | Abeta Spark — Swipe Discovery & Matches | `spark-deck`, `spark-matches` | `evening_boost_window` slotting on `spark-deck`; 4-profile `swipe_deck` (`POST /api/v1/spark/swipe` + undo) and match `action_row` widgets |
+| **`abeta-trade`** | Abeta Trade — B2B Wholesale & RFQ Sourcing | `trade-home`, `trade-supplier` | `enterprise_buyers` (`segment in ["enterprise", "vip"]`) procurement desk slotting on `trade-home`; MOQ supplier cards and validated RFQ `form_v1` (`POST /api/v1/trade/rfq`) |
+
+Pass `?tenant=<slug>` or `X-Tenant-ID: <slug>` on any Runtime or Studio endpoint to switch workspaces dynamically.
 
 ---
 

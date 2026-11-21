@@ -21,6 +21,7 @@ var supportedSnippetTypeList = []string{
 	snippets.SnippetTypeBanner,
 	snippets.SnippetTypeCard,
 	snippets.SnippetTypeCarousel,
+	snippets.SnippetTypeChipGroup,
 	snippets.SnippetTypeDivider,
 	snippets.SnippetTypeEmptyState,
 	snippets.SnippetTypeForm,
@@ -28,7 +29,9 @@ var supportedSnippetTypeList = []string{
 	snippets.SnippetTypeHeader,
 	snippets.SnippetTypeMetricCard,
 	snippets.SnippetTypeProductCard,
+	snippets.SnippetTypeSearchBar,
 	snippets.SnippetTypeSpacer,
+	snippets.SnippetTypeSwipeDeck,
 	snippets.SnippetTypeTabs,
 }
 
@@ -40,13 +43,13 @@ var supportedSnippetTypeSet = func() map[string]struct{} {
 	return m
 }()
 
-// IsValidSnippetType returns true if t is one of the 14 supported KMP v1 SnippetTypes.
+// IsValidSnippetType returns true if t is one of the 17 supported KMP v1 SnippetTypes.
 func IsValidSnippetType(t string) bool {
 	_, ok := supportedSnippetTypeSet[t]
 	return ok
 }
 
-// SupportedSnippetTypes returns a deterministic, sorted copy of all 14 KMP v1 SnippetTypes.
+// SupportedSnippetTypes returns a deterministic, sorted copy of all 17 KMP v1 SnippetTypes.
 func SupportedSnippetTypes() []string {
 	out := make([]string, len(supportedSnippetTypeList))
 	copy(out, supportedSnippetTypeList)
@@ -209,6 +212,27 @@ func (v *DefaultLayoutValidator) validateWidgetBinding(
 	case snippets.SnippetTypeTabs:
 		if rawTabs, exists := props["tabs"]; exists && rawTabs != nil {
 			v.validateTabsProp(path+"/props/tabs", rawTabs, widgets, visited, issues)
+		}
+
+	case snippets.SnippetTypeSwipeDeck:
+		if rawCards, exists := props["cards"]; exists && rawCards != nil {
+			v.validateSwipeCardsProp(path+"/props/cards", rawCards, issues)
+		}
+
+	case snippets.SnippetTypeSearchBar:
+		if rawSearchID, exists := props["search_id"]; exists && rawSearchID != nil {
+			if _, ok := rawSearchID.(string); !ok {
+				*issues = append(*issues, domain.ValidationIssue{
+					Path:    path + "/props/search_id",
+					Code:    "invalid_search_id",
+					Message: "search_bar search_id must be a string",
+				})
+			}
+		}
+
+	case snippets.SnippetTypeChipGroup:
+		if rawChips, exists := props["chips"]; exists && rawChips != nil {
+			v.validateChipGroupProp(path+"/props/chips", rawChips, issues)
 		}
 	}
 }

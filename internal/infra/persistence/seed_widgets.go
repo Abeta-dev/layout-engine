@@ -2,6 +2,7 @@ package persistence
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/abeta-dev/kmp/bff/pkg/sdui/actions"
@@ -25,12 +26,16 @@ type seedProductSpec struct {
 	rating         string
 	initialQty     int
 	delayMs        int
+	imageNamespace string
+	onClickRoute   string
 }
 
 func seedWidgets(tenantID string, now time.Time) []domain.Widget {
-	widgets := make([]domain.Widget, 0, 20)
+	widgets := make([]domain.Widget, 0, 22)
 	widgets = append(widgets,
 		seedHeaderWidget(tenantID, now),
+		seedFreshSearchBarWidget(tenantID, now),
+		seedFreshCategoryChipsWidget(tenantID, now),
 		seedHeroBannerWidget(tenantID, now),
 		seedVIPBannerWidget(tenantID, now),
 		seedMorningBannerWidget(tenantID, now),
@@ -373,8 +378,42 @@ func seedETAMetricWidget(tenantID string, now time.Time) domain.Widget {
 	}
 }
 
+func seedFreshSearchBarWidget(tenantID string, now time.Time) domain.Widget {
+	return buildSeedSearchBarWidget(
+		tenantID,
+		"w_fresh_search_bar",
+		"fresh-search-bar",
+		"Abeta Fresh Search Bar",
+		"fresh_search",
+		"Search produce, dairy, bakery in {{city}}...",
+		"fresh-home",
+		now,
+	)
+}
+
+func seedFreshCategoryChipsWidget(tenantID string, now time.Time) domain.Widget {
+	return buildSeedChipGroupWidget(
+		tenantID,
+		"w_fresh_category_chips",
+		"fresh-category-chips",
+		"Abeta Fresh Category Chips",
+		"fresh_categories",
+		"fresh-home",
+		[]seedChipSpec{
+			{id: "all", label: "All", selected: true},
+			{id: "produce", label: "Produce"},
+			{id: "dairy", label: "Dairy"},
+			{id: "bakery", label: "Bakery"},
+			{id: "snacks", label: "Snacks"},
+			{id: "drinks", label: "Drinks"},
+		},
+		now,
+	)
+}
+
 func buildSeedProductWidget(tenantID string, now time.Time, spec seedProductSpec) domain.Widget {
 	fieldID := "cart_qty_" + spec.productID
+	priceCentsStr := strconv.Itoa(spec.unitPriceCents)
 	incAct := actions.NewBatchAction("inc_"+spec.productID, actions.BatchPayload{
 		Actions: []actions.ActionTrigger{
 			actions.NewTriggerFeedbackAction("bounce_"+spec.productID, actions.TriggerFeedbackPayload{
@@ -387,7 +426,7 @@ func buildSeedProductWidget(tenantID string, now time.Time, spec seedProductSpec
 				Properties: map[string]any{
 					"product_id":       spec.productID,
 					"field_id":         fieldID,
-					"unit_price_cents": spec.unitPriceCents,
+					"unit_price_cents": priceCentsStr,
 				},
 			}),
 		},
@@ -405,11 +444,21 @@ func buildSeedProductWidget(tenantID string, now time.Time, spec seedProductSpec
 	stepper.MinQuantity = 0
 	stepper.MaxQuantity = 10
 
-	previewToast := actions.NewShowToastAction("preview_"+spec.productID, actions.ShowToastPayload{
-		Message:    fmt.Sprintf("%s (%s) · Delivered chilled in 8 mins", spec.title, spec.price),
+	onClickAct := actions.NewShowToastAction("preview_"+spec.productID, actions.ShowToastPayload{
+		Message:    fmt.Sprintf("%s (%s) · Added to Abeta catalog preview", spec.title, spec.price),
 		DurationMs: 2000,
 		Variant:    "info",
 	})
+	if spec.onClickRoute != "" {
+		onClickAct = actions.NewNavigateAction("open_"+spec.productID, actions.NavigatePayload{
+			Route: "/screens/" + spec.onClickRoute,
+		})
+	}
+
+	imgNS := spec.imageNamespace
+	if imgNS == "" {
+		imgNS = "fresh"
+	}
 
 	data := snippets.ProductCardSnippetData{
 		ProductID:      spec.productID,
@@ -420,7 +469,7 @@ func buildSeedProductWidget(tenantID string, now time.Time, spec seedProductSpec
 		UnitPriceCents: spec.unitPriceCents,
 		Badge:          ptrTag(atoms.NewTag(spec.badge, spec.badgeColor)),
 		Image: &atoms.ImageAtom{
-			URL:                fmt.Sprintf("https://cdn.abeta.dev/fresh/%s.png", spec.productID),
+			URL:                fmt.Sprintf("https://cdn.abeta.dev/%s/%s.png", imgNS, spec.productID),
 			ContentDescription: spec.title,
 			HeightDp:           atoms.IntPtr(110),
 			ScaleMode:          "crop",
@@ -428,7 +477,7 @@ func buildSeedProductWidget(tenantID string, now time.Time, spec seedProductSpec
 		},
 		Stepper: stepper,
 		Rating:  ptrText(atoms.NewText(spec.rating, theming.TypographyLabelSmall, theming.ColorSuccess)),
-		OnClick: &previewToast,
+		OnClick: &onClickAct,
 		Layout:  seedCompactCardLayout(),
 	}
 
@@ -448,7 +497,7 @@ func buildSeedProductWidget(tenantID string, now time.Time, spec seedProductSpec
 		}),
 		Tracking: map[string]any{
 			"event_name": "product_impression",
-			"properties": map[string]any{"product_id": spec.productID, "unit_price_cents": spec.unitPriceCents},
+			"properties": map[string]any{"product_id": spec.productID, "unit_price_cents": priceCentsStr},
 		},
 		Tags:      []string{"product", "commerce"},
 		Active:    true,
