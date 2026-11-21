@@ -9,3 +9,10 @@ regexTarget = "match"
 regexes = [
   '''postgres://layout:layout@(?:postgres|localhost|127\.0\.0\.1):5432/layout_engine(?:_test)?''',
 ]
+
+[[allowlists]]
+description = "Starter widget template keys (TemplateKey: tmpl_*) in seed data are snippet identifiers, not API keys"
+regexTarget = "match"
+regexes = [
+  '''Key:\s*"tmpl_[a-z0-9_]+"''',
+]
