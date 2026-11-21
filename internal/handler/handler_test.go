@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	layoutengine "github.com/abeta-dev/layout-engine"
 	"github.com/abeta-dev/layout-engine/internal/domain"
 	"github.com/abeta-dev/layout-engine/internal/engine"
 	"github.com/abeta-dev/layout-engine/internal/handler"
@@ -273,6 +274,36 @@ func TestEmbeddedStudioDocsAndHealthEndpoints(t *testing.T) {
 		}
 		if tc.substr != "" && !strings.Contains(rec.Body.String(), tc.substr) {
 			t.Errorf("GET %s: expected body to contain %q", tc.path, tc.substr)
+		}
+	}
+}
+
+func TestLLMsTxtEndpoints(t *testing.T) {
+	t.Parallel()
+	r := setupTestRouter(t)
+
+	for _, tc := range []struct {
+		path string
+		want []byte
+	}{
+		{"/llms.txt", layoutengine.LLMsTxt},
+		{"/llms-full.txt", layoutengine.LLMsFullTxt},
+	} {
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, tc.path, nil)
+		r.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("GET %s: expected status 200, got %d", tc.path, rec.Code)
+		}
+		if ct := rec.Header().Get("Content-Type"); !strings.Contains(ct, "text/plain") {
+			t.Errorf("GET %s: expected text/plain Content-Type, got %q", tc.path, ct)
+		}
+		if !bytes.Equal(rec.Body.Bytes(), tc.want) {
+			t.Errorf("GET %s: body mismatch against embedded document", tc.path)
+		}
+		if !strings.HasPrefix(rec.Body.String(), "# Abeta Dynamic Layout Engine") {
+			t.Errorf("GET %s: expected body to start with # Abeta Dynamic Layout Engine", tc.path)
 		}
 	}
 }

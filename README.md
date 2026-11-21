@@ -82,6 +82,7 @@ On first launch, the engine binds to **`:8090`**, initializes `layout-engine.db`
 - **Visual Layout Studio SPA**: [http://localhost:8090/studio](http://localhost:8090/studio)
 - **Interactive Scalar API Docs**: [http://localhost:8090/docs](http://localhost:8090/docs)
 - **OpenAPI 3.1 JSON Spec**: [http://localhost:8090/openapi.json](http://localhost:8090/openapi.json)
+- **LLM Reference Docs (`llmstxt.org`)**: [http://localhost:8090/llms.txt](http://localhost:8090/llms.txt) · [http://localhost:8090/llms-full.txt](http://localhost:8090/llms-full.txt)
 - **Resolve a Dynamic Page with Live Trace**:
   ```bash
   curl "http://localhost:8090/api/v1/pages/store-home?include_trace=true&city=Bengaluru&segment=vip&platform=ios&app_version=2.1.0"
@@ -132,6 +133,7 @@ Starts **`postgres:17-alpine`** + **`abeta-layout-engine`** with healthchecks, a
 - `GET /studio` — Embedded Visual Layout Studio SPA
 - `GET /openapi.json` — OpenAPI 3.1 specification
 - `GET /docs` — Interactive Scalar API Reference UI
+- `GET /llms.txt`, `GET /llms-full.txt` — Embedded plain-text `llmstxt.org` index & full LLM engineering reference
 - `GET /healthz`, `GET /readyz`, `GET /metrics` — Liveness, readiness, and telemetry probes
 
 ### Runtime KMP-Compatible SDUI API (`ginmw.Envelope`)
@@ -159,11 +161,13 @@ Starts **`postgres:17-alpine`** + **`abeta-layout-engine`** with healthchecks, a
 
 ## Documentation & Engineering Guides
 
+- [llms.txt](llms.txt) · [llms-full.txt](llms-full.txt) — `llmstxt.org` index and single-file LLM engineering reference (also served live at `GET /llms.txt` and `GET /llms-full.txt`)
 - [docs/architecture.md](docs/architecture.md) — Clean Architecture layers, domain ports, dual-database schema, and runtime resolution pipeline
 - [docs/studio-and-rules.md](docs/studio-and-rules.md) — Visual Layout Studio workflows, rule operators, UTC schedule windows, dynamic slotting, snapshots, and curl cookbook
 - [docs/kmp-integration.md](docs/kmp-integration.md) — Integrating `abeta-dev/kmp` (`:sample-app`, `:storybook`, `:sdui-layout`, `:watch-companion`), context headers, actions, and caching
 - [AGENTS.md](AGENTS.md) · [CLAUDE.md](CLAUDE.md) · [GEMINI.md](GEMINI.md) — AI coding agent contracts and verification gates
 - [skills/abeta-layout-engine/SKILL.md](skills/abeta-layout-engine/SKILL.md) · [agents/layout-engine-owner.md](agents/layout-engine-owner.md) — Domain skill & Code Owner review persona
+- Companion Abeta Ecosystem: [`Abeta-dev/kmp`](https://github.com/Abeta-dev/kmp) · [`Abeta-dev/sdui-bff`](https://github.com/Abeta-dev/sdui-bff) · [`Abeta-dev/go-libs`](https://github.com/Abeta-dev/go-libs)
 - [CONTRIBUTING.md](CONTRIBUTING.md) · [SECURITY.md](SECURITY.md) · [CHANGELOG.md](CHANGELOG.md) · [LICENSE](LICENSE)
 
 ---

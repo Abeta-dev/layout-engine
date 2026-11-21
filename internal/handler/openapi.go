@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 
+	layoutengine "github.com/abeta-dev/layout-engine"
 	"github.com/gin-gonic/gin"
 )
 
@@ -30,7 +31,9 @@ func registerOpenAPIRoutes(engine *gin.Engine, serviceName string) {
 		},
 		"servers": []map[string]string{{"url": "/"}},
 		"paths": map[string]any{
-			"/studio": map[string]any{"get": map[string]any{"summary": "Visual Layout Studio SPA", "tags": []string{"Studio UI"}}},
+			"/studio":        map[string]any{"get": map[string]any{"summary": "Visual Layout Studio SPA", "tags": []string{"Studio UI"}}},
+			"/llms.txt":      map[string]any{"get": map[string]any{"summary": "Plain-text llmstxt.org repository index", "tags": []string{"Docs & Discovery"}}},
+			"/llms-full.txt": map[string]any{"get": map[string]any{"summary": "Plain-text full LLM engineering reference", "tags": []string{"Docs & Discovery"}}},
 			"/api/v1/screens": map[string]any{
 				"get": map[string]any{"summary": "List published dynamic screens (KMP-compatible)", "tags": []string{"Runtime SDUI"}},
 			},
@@ -77,5 +80,11 @@ func registerOpenAPIRoutes(engine *gin.Engine, serviceName string) {
 	})
 	engine.GET("/docs", func(c *gin.Context) {
 		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(scalarDocsHTML))
+	})
+	engine.GET("/llms.txt", func(c *gin.Context) {
+		c.Data(http.StatusOK, "text/plain; charset=utf-8", layoutengine.LLMsTxt)
+	})
+	engine.GET("/llms-full.txt", func(c *gin.Context) {
+		c.Data(http.StatusOK, "text/plain; charset=utf-8", layoutengine.LLMsFullTxt)
 	})
 }
