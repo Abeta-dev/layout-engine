@@ -3,6 +3,8 @@
 [![CI](https://github.com/Abeta-dev/layout-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/Abeta-dev/layout-engine/actions/workflows/ci.yml)
 [![Release](https://github.com/Abeta-dev/layout-engine/actions/workflows/release.yml/badge.svg)](https://github.com/Abeta-dev/layout-engine/actions/workflows/release.yml)
 [![Go 1.26.0](https://img.shields.io/badge/Go-1.26.0-00ADD8.svg?logo=go)](https://go.dev/)
+[![llms.txt](https://img.shields.io/badge/AI_Docs-llms.txt-10B981.svg)](llms.txt)
+[![Deploy to Render](https://img.shields.io/badge/Deploy_Free-Render-46E3B7.svg?logo=render&logoColor=black)](https://render.com/deploy?repo=https://github.com/Abeta-dev/layout-engine)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
 **Abeta Dynamic Layout Engine** (`github.com/abeta-dev/layout-engine`) is an open-source, multi-tenant, rule-driven **Server-Driven UI (SDUI) Layout Engine & Visual Layout Studio** written in **Go 1.26.0** with strict Clean Architecture.

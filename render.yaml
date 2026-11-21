@@ -1,0 +1,25 @@
+# One-click free hosting blueprint for Render (https://render.com)
+# Deploys Abeta Dynamic Layout Engine + Visual Studio (/studio) on the $0/month free tier
+# with embedded SQLite WAL and all 6 pre-seeded multi-tenant vertical workspaces.
+services:
+  - type: web
+    name: abeta-layout-engine
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    envVars:
+      - key: GIN_MODE
+        value: release
+      - key: DB_DIALECT
+        value: sqlite
+      - key: DB_DSN
+        value: "file:/data/layout-engine.db?_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)"
+      - key: AUTO_MIGRATE
+        value: "true"
+      - key: SEED_STARTER_DATA
+        value: "true"
+      - key: DEFAULT_TENANT
+        value: abeta-fresh
+      - key: LOG_LEVEL
+        value: info
