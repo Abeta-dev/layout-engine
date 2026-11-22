@@ -172,9 +172,13 @@
         <div class="filter-stack">
           <input id="widget-search" type="search" class="input-search" placeholder="Search widgets, tags, slugs..." aria-label="Search widgets" />
           <select id="widget-type-filter" class="select-compact" aria-label="Filter by snippet type">
-            <option value="">All 17 Snippet Types</option>
+            <option value="">All 21 Snippet Types</option>
             <option value="header_v1">header_v1</option>
             <option value="banner_v1">banner_v1</option>
+            <option value="nudge_bar">nudge_bar</option>
+            <option value="marquee_strip">marquee_strip</option>
+            <option value="order_tracker">order_tracker</option>
+            <option value="composed_block">composed_block</option>
             <option value="metric_card">metric_card</option>
             <option value="product_card">product_card</option>
             <option value="card_v1">card_v1</option>
@@ -617,7 +621,7 @@
         <input id="wf-id" type="hidden" />
         <div class="field-row">
           <div class="field-group">
-            <label for="wf-template">Seed from Widget Template (17 built-in)</label>
+            <label for="wf-template">Seed from Widget Template (21 built-in)</label>
             <select id="wf-template">
               <option value="">— Choose template to pre-fill props —</option>
             </select>
@@ -627,6 +631,10 @@
             <select id="wf-snippet-type" required>
               <option value="banner_v1">banner_v1</option>
               <option value="header_v1">header_v1</option>
+              <option value="nudge_bar">nudge_bar</option>
+              <option value="marquee_strip">marquee_strip</option>
+              <option value="order_tracker">order_tracker</option>
+              <option value="composed_block">composed_block</option>
               <option value="product_card">product_card</option>
               <option value="metric_card">metric_card</option>
               <option value="card_v1">card_v1</option>
@@ -677,7 +685,7 @@
         </div>
 
         <div class="field-group">
-          <label for="wf-motion">Motion Spec JSON <span class="hint-text">(optional, e.g. {"enter":"slide_up","duration_token":"fast"})</span></label>
+          <label for="wf-motion">Motion Spec JSON <span class="hint-text">(optional, e.g. {"enter":"slide_up","loop_effect":"pulse"})</span></label>
           <textarea id="wf-motion" class="code-textarea mono" rows="2" spellcheck="false" placeholder="Leave blank for none"></textarea>
         </div>
 
@@ -874,6 +882,20 @@
             <div class="field-group">
               <label for="pcf-cart-cta">CTA Label</label>
               <input id="pcf-cart-cta" type="text" placeholder="Checkout" />
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field-group">
+              <label for="pcf-cart-threshold">Free Delivery Threshold (¢)</label>
+              <input id="pcf-cart-threshold" type="number" min="0" placeholder="1500" />
+            </div>
+            <div class="field-group">
+              <label for="pcf-cart-nudge-prefix">Nudge Prefix</label>
+              <input id="pcf-cart-nudge-prefix" type="text" placeholder="Add" />
+            </div>
+            <div class="field-group">
+              <label for="pcf-cart-unlocked">Unlocked Label</label>
+              <input id="pcf-cart-unlocked" type="text" placeholder="Free Delivery Unlocked!" />
             </div>
           </div>
         </div>

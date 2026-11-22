@@ -53,7 +53,7 @@ func buildBitesWorkspaceSpec(now time.Time) seedWorkspaceSpec {
 			},
 		},
 		ChangeLogID:      "chg_seed_abeta_bites",
-		ChangeLogSummary: "Bootstrapped Abeta Bites food delivery workspace with 3 published layouts and 17 templates",
+		ChangeLogSummary: "Bootstrapped Abeta Bites food delivery workspace with 3 published layouts and 21 templates",
 	}
 }
 
@@ -239,12 +239,106 @@ func seedBitesWidgets(tenantID string, now time.Time) []domain.Widget {
 			}),
 			Tags: []string{"tracking", "step"}, Active: true, CreatedAt: now, UpdatedAt: now,
 		},
+		seedBitesOrderTrackerWidget(tenantID, now),
 	}
 
 	for _, sp := range dishes {
 		widgets = append(widgets, buildSeedProductWidget(tenantID, now, sp))
 	}
 	return widgets
+}
+
+func seedBitesOrderTrackerWidget(tenantID string, now time.Time) domain.Widget {
+	callRiderAct := actions.NewBatchAction("bites_call_rider", actions.BatchPayload{
+		Actions: []actions.ActionTrigger{
+			actions.NewTriggerFeedbackAction("bites_rider_haptic", actions.TriggerFeedbackPayload{
+				Effect: actions.FeedbackHapticTick,
+			}),
+			actions.NewShowToastAction("bites_rider_toast", actions.ShowToastPayload{
+				Message:    "Connecting masked call to Karan M. for order #BTS-4091...",
+				DurationMs: 2200,
+				Variant:    "info",
+			}),
+		},
+		StopOnError: true,
+	})
+	shareEtaAct := actions.NewShareAction("bites_share_eta", actions.SharePayload{
+		Title: "Abeta Bites Order #BTS-4091",
+		Text:  "My Saffron Hearth Kitchen order arrives in 14 mins via Abeta Bites!",
+		URL:   "https://app.abeta.dev/screens/bites-order-track",
+	})
+
+	etaCountdown := atoms.NewCountdown("bites_order_eta_cd", 840, "Arriving in")
+	etaCountdown.Motion = &atoms.MotionSpec{LoopEffect: atoms.MotionLoopPulse}
+
+	etaBadge := atoms.NewTag("14 MINS", theming.ColorSuccessContainer)
+	etaBadge.Motion = &atoms.MotionSpec{LoopEffect: atoms.MotionLoopPulse}
+
+	primaryBtn := atoms.NewButton("btn_bites_call_rider", "Call Rider", "primary", &callRiderAct)
+	primaryBtn.Size = "sm"
+	secondaryBtn := atoms.NewButton("btn_bites_share_eta", "Share Live ETA", "outline", &shareEtaAct)
+	secondaryBtn.Size = "sm"
+
+	data := snippets.OrderTrackerSnippetData{
+		TrackerID:    "bites_live_tracker_4091",
+		OrderCode:    "#BTS-4091",
+		Headline:     atoms.NewText("Rider on the way in {{city}}", theming.TypographyTitleMedium, theming.ColorTextPrimary),
+		EtaCountdown: &etaCountdown,
+		EtaBadge:     &etaBadge,
+		RiderName:    "Karan M.",
+		RiderCaption: "4.9 ★ · Electric bike · Thermal insulated bag",
+		Steps: []snippets.OrderTrackerStep{
+			{
+				ID:        "confirmed",
+				Label:     "Order Confirmed",
+				Caption:   "Saffron Hearth Kitchen accepted #BTS-4091",
+				Icon:      ptrIcon(atoms.NewIcon("check_circle", 18, theming.ColorSuccess)),
+				Completed: true,
+			},
+			{
+				ID:        "preparing",
+				Label:     "Chef Preparing",
+				Caption:   "Smoked Veg Biryani & Paneer Tikka sealed piping hot",
+				Icon:      ptrIcon(atoms.NewIcon("restaurant", 18, theming.ColorSuccess)),
+				Completed: true,
+			},
+			{
+				ID:      "en_route",
+				Label:   "Rider En Route",
+				Caption: "Karan M. is 1.2 km away in {{city}}",
+				Icon:    ptrIcon(atoms.NewIcon("local_shipping", 18, theming.ColorBrandPrimary)),
+				Active:  true,
+			},
+			{
+				ID:      "delivered",
+				Label:   "At Your Door",
+				Caption: "Contactless handoff with tamper-evident seal",
+				Icon:    ptrIcon(atoms.NewIcon("home", 18, theming.ColorTextTertiary)),
+			},
+		},
+		PrimaryAction:   &primaryBtn,
+		SecondaryAction: &secondaryBtn,
+		Layout:          seedCardLayout(),
+	}
+
+	return domain.Widget{
+		ID:          "w_bites_live_order_tracker",
+		TenantID:    tenantID,
+		Slug:        "bites-live-order-tracker",
+		Name:        "Live 4-Step Animated Order Tracker",
+		TemplateKey: "tmpl_order_tracker",
+		SnippetType: snippets.SnippetTypeOrderTracker,
+		Props:       structToMap(data),
+		Motion:      structToMap(atoms.MotionSpec{Enter: atoms.MotionTransitionSlideUp, DurationToken: atoms.MotionDurationNormal}),
+		Tracking: map[string]any{
+			"event_name": "order_tracker_viewed",
+			"properties": map[string]any{"order_code": "#BTS-4091", "vertical": "abeta-bites"},
+		},
+		Tags:      []string{"order_tracker", "tracking", "live"},
+		Active:    true,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
 }
 
 func seedBitesRules(tenantID string, now time.Time) []domain.TargetingRule {
@@ -338,17 +432,15 @@ func seedBitesLayouts(tenantID string, now time.Time) []domain.Layout {
 		},
 		{
 			ID: "lay_bites_order_track", TenantID: tenantID, Slug: "bites-order-track",
-			Title: "Track Order #AB-4821", Description: "Real-time meal order milestone progress and rider telemetry.",
+			Title: "Track Order #BTS-4091", Description: "Real-time 4-step animated meal order milestone tracker and rider telemetry.",
 			Status: domain.LayoutStatusPublished, PublishedVersion: 1, DraftVersion: 1,
 			PageConfig: domain.LayoutPageConfig{
-				Toolbar:        buildSeedVerticalToolbar("Order #AB-4821", "Arriving in 14 mins · Abeta Bites", "back_bites_track"),
+				Toolbar:        buildSeedVerticalToolbar("Order #BTS-4091", "Arriving in 14 mins · Abeta Bites", "back_bites_track"),
 				AdaptiveLayout: buildSeedCenteredAdaptive(840),
 			},
 			Slots: []domain.LayoutSlot{
-				{SlotID: "slot_track_banner", WidgetID: "w_bites_track_banner", Position: 0, Enabled: true},
+				{SlotID: "slot_track_order_tracker", WidgetID: "w_bites_live_order_tracker", Position: 0, Pinned: true, Enabled: true},
 				{SlotID: "slot_track_metric", WidgetID: "w_bites_track_metric", Position: 1, Enabled: true},
-				{SlotID: "slot_track_step_1", WidgetID: "w_bites_track_confirmed", Position: 2, Enabled: true},
-				{SlotID: "slot_track_step_2", WidgetID: "w_bites_track_rider", Position: 3, Enabled: true},
 			},
 			Tags: []string{"vertical", "order-tracking"}, CreatedAt: now, UpdatedAt: now,
 		},

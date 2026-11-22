@@ -56,7 +56,7 @@ func registerOpenAPIRoutes(engine *gin.Engine, serviceName string) {
 				"post": map[string]any{"summary": "Place express quick-commerce order with celebration follow-up", "tags": []string{"Runtime SDUI"}},
 			},
 			"/api/v1/studio/tenants":                 map[string]any{"get": map[string]any{"summary": "List tenants", "tags": []string{"Studio CMS"}}, "post": map[string]any{"summary": "Create/update tenant", "tags": []string{"Studio CMS"}}},
-			"/api/v1/studio/templates":               map[string]any{"get": map[string]any{"summary": "List 14 KMP snippet templates", "tags": []string{"Studio CMS"}}},
+			"/api/v1/studio/templates":               map[string]any{"get": map[string]any{"summary": "List 21 KMP snippet templates", "tags": []string{"Studio CMS"}}},
 			"/api/v1/studio/widgets":                 map[string]any{"get": map[string]any{"summary": "List widgets", "tags": []string{"Studio CMS"}}, "post": map[string]any{"summary": "Create/update widget", "tags": []string{"Studio CMS"}}},
 			"/api/v1/studio/layouts":                 map[string]any{"get": map[string]any{"summary": "List layouts", "tags": []string{"Studio CMS"}}},
 			"/api/v1/studio/layouts/{slug}":          map[string]any{"get": map[string]any{"summary": "Get layout draft", "tags": []string{"Studio CMS"}}, "put": map[string]any{"summary": "Create/update layout draft & slots", "tags": []string{"Studio CMS"}}},

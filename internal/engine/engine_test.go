@@ -714,8 +714,8 @@ func TestLayoutValidator(t *testing.T) {
 	validator := engine.NewLayoutValidator()
 
 	supported := engine.SupportedSnippetTypes()
-	if len(supported) != 17 {
-		t.Fatalf("SupportedSnippetTypes() len = %d, want 17", len(supported))
+	if len(supported) != 21 {
+		t.Fatalf("SupportedSnippetTypes() len = %d, want 21", len(supported))
 	}
 	for _, st := range supported {
 		if !engine.IsValidSnippetType(st) {

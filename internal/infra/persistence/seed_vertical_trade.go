@@ -62,7 +62,7 @@ func buildTradeWorkspaceSpec(now time.Time) seedWorkspaceSpec {
 			},
 		},
 		ChangeLogID:      "chg_seed_abeta_trade",
-		ChangeLogSummary: "Bootstrapped Abeta Trade B2B wholesale workspace with 2 published layouts and 17 templates",
+		ChangeLogSummary: "Bootstrapped Abeta Trade B2B wholesale workspace with 2 published layouts and 21 templates",
 	}
 }
 

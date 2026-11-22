@@ -1,13 +1,37 @@
 package engine
 
 import (
+	"encoding/json"
 	"fmt"
+	"math"
 	"strings"
 
 	"github.com/abeta-dev/kmp/bff/pkg/sdui/atoms"
 	"github.com/abeta-dev/kmp/bff/pkg/sdui/snippets"
 	"github.com/abeta-dev/layout-engine/internal/domain"
 )
+
+const maxComposedNodeDepth = 6
+
+var validComposedNodeKinds = map[string]struct{}{
+	snippets.ComposedNodeColumn:         {},
+	snippets.ComposedNodeRow:            {},
+	snippets.ComposedNodeBox:            {},
+	snippets.ComposedNodeCard:           {},
+	snippets.ComposedNodeFlowRow:        {},
+	snippets.ComposedNodeText:           {},
+	snippets.ComposedNodeButton:         {},
+	snippets.ComposedNodeTag:            {},
+	snippets.ComposedNodeIcon:           {},
+	snippets.ComposedNodeImage:          {},
+	snippets.ComposedNodeAvatar:         {},
+	snippets.ComposedNodeProgress:       {},
+	snippets.ComposedNodeDivider:        {},
+	snippets.ComposedNodeSpacer:         {},
+	snippets.ComposedNodeStepper:        {},
+	snippets.ComposedNodeCountdown:      {},
+	snippets.ComposedNodeRollingCounter: {},
+}
 
 func (v *DefaultLayoutValidator) validateSwipeCardsProp(
 	path string,
@@ -173,4 +197,294 @@ func extractAtomText(raw any) string {
 		}
 	}
 	return ""
+}
+
+func (v *DefaultLayoutValidator) validateNudgeBarProps(
+	path string,
+	props map[string]any,
+	issues *[]domain.ValidationIssue,
+) {
+	if extractAtomText(props["title"]) == "" {
+		*issues = append(*issues, domain.ValidationIssue{
+			Path:    path + "/title",
+			Code:    "required",
+			Message: "nudge_bar requires non-empty title",
+		})
+	}
+	if rawProg, exists := props["progress"]; exists && rawProg != nil {
+		prog, ok := extractStrictFloat64(rawProg)
+		if !ok || math.IsNaN(prog) || math.IsInf(prog, 0) || prog < 0 || prog > 1 {
+			*issues = append(*issues, domain.ValidationIssue{
+				Path:    path + "/progress",
+				Code:    "invalid_progress",
+				Message: "nudge_bar progress must be a number between 0 and 1",
+			})
+		}
+	}
+}
+
+func extractStrictFloat64(raw any) (float64, bool) {
+	switch val := raw.(type) {
+	case float64:
+		return val, true
+	case *float64:
+		if val == nil {
+			return 0, false
+		}
+		return *val, true
+	case float32:
+		return float64(val), true
+	case int:
+		return float64(val), true
+	case int64:
+		return float64(val), true
+	case json.Number:
+		f, err := val.Float64()
+		return f, err == nil
+	default:
+		return 0, false
+	}
+}
+
+func (v *DefaultLayoutValidator) validateMarqueeItemsProp(
+	path string,
+	raw any,
+	issues *[]domain.ValidationIssue,
+) {
+	switch items := raw.(type) {
+	case []snippets.MarqueeItem:
+		for i, item := range items {
+			if strings.TrimSpace(item.Text) == "" {
+				*issues = append(*issues, domain.ValidationIssue{
+					Path:    fmt.Sprintf("%s/%d/text", path, i),
+					Code:    "required",
+					Message: "marquee item requires non-empty text",
+				})
+			}
+		}
+	case []map[string]any:
+		for i, item := range items {
+			validateMapMarqueeItem(fmt.Sprintf("%s/%d", path, i), item, issues)
+		}
+	case []any:
+		for i, elem := range items {
+			itemPath := fmt.Sprintf("%s/%d", path, i)
+			switch typed := elem.(type) {
+			case snippets.MarqueeItem:
+				if strings.TrimSpace(typed.Text) == "" {
+					*issues = append(*issues, domain.ValidationIssue{
+						Path:    itemPath + "/text",
+						Code:    "required",
+						Message: "marquee item requires non-empty text",
+					})
+				}
+			case map[string]any:
+				validateMapMarqueeItem(itemPath, typed, issues)
+			default:
+				*issues = append(*issues, domain.ValidationIssue{
+					Path:    itemPath,
+					Code:    "invalid_marquee_item",
+					Message: "marquee item entry must be an object",
+				})
+			}
+		}
+	default:
+		*issues = append(*issues, domain.ValidationIssue{
+			Path:    path,
+			Code:    "invalid_marquee_items",
+			Message: "marquee_strip items must be a list of marquee item objects",
+		})
+	}
+}
+
+func validateMapMarqueeItem(path string, m map[string]any, issues *[]domain.ValidationIssue) {
+	text, _ := m["text"].(string)
+	if strings.TrimSpace(text) == "" {
+		*issues = append(*issues, domain.ValidationIssue{
+			Path:    path + "/text",
+			Code:    "required",
+			Message: "marquee item requires non-empty text",
+		})
+	}
+}
+
+func (v *DefaultLayoutValidator) validateOrderTrackerProps(
+	path string,
+	props map[string]any,
+	issues *[]domain.ValidationIssue,
+) {
+	if extractAtomText(props["headline"]) == "" {
+		*issues = append(*issues, domain.ValidationIssue{
+			Path:    path + "/headline",
+			Code:    "required",
+			Message: "order_tracker requires non-empty headline",
+		})
+	}
+	rawSteps, exists := props["steps"]
+	if !exists || rawSteps == nil {
+		return
+	}
+	stepsPath := path + "/steps"
+	switch steps := rawSteps.(type) {
+	case []snippets.OrderTrackerStep:
+		for i, step := range steps {
+			if strings.TrimSpace(step.Label) == "" {
+				*issues = append(*issues, domain.ValidationIssue{
+					Path:    fmt.Sprintf("%s/%d/label", stepsPath, i),
+					Code:    "required",
+					Message: "order_tracker step requires non-empty label",
+				})
+			}
+		}
+	case []map[string]any:
+		for i, step := range steps {
+			validateMapOrderTrackerStep(fmt.Sprintf("%s/%d", stepsPath, i), step, issues)
+		}
+	case []any:
+		for i, elem := range steps {
+			stepPath := fmt.Sprintf("%s/%d", stepsPath, i)
+			switch typed := elem.(type) {
+			case snippets.OrderTrackerStep:
+				if strings.TrimSpace(typed.Label) == "" {
+					*issues = append(*issues, domain.ValidationIssue{
+						Path:    stepPath + "/label",
+						Code:    "required",
+						Message: "order_tracker step requires non-empty label",
+					})
+				}
+			case map[string]any:
+				validateMapOrderTrackerStep(stepPath, typed, issues)
+			default:
+				*issues = append(*issues, domain.ValidationIssue{
+					Path:    stepPath,
+					Code:    "invalid_order_step",
+					Message: "order_tracker step entry must be an object",
+				})
+			}
+		}
+	default:
+		*issues = append(*issues, domain.ValidationIssue{
+			Path:    stepsPath,
+			Code:    "invalid_order_steps",
+			Message: "order_tracker steps must be a list of step objects",
+		})
+	}
+}
+
+func validateMapOrderTrackerStep(path string, m map[string]any, issues *[]domain.ValidationIssue) {
+	label, _ := m["label"].(string)
+	if strings.TrimSpace(label) == "" {
+		*issues = append(*issues, domain.ValidationIssue{
+			Path:    path + "/label",
+			Code:    "required",
+			Message: "order_tracker step requires non-empty label",
+		})
+	}
+}
+
+func (v *DefaultLayoutValidator) validateComposedBlockProps(
+	path string,
+	props map[string]any,
+	issues *[]domain.ValidationIssue,
+) {
+	rawRoot, exists := props["root"]
+	if !exists || rawRoot == nil {
+		*issues = append(*issues, domain.ValidationIssue{
+			Path:    path + "/root",
+			Code:    "required",
+			Message: "composed_block requires a root node object",
+		})
+		return
+	}
+	v.validateComposedNode(path+"/root", rawRoot, 0, issues)
+}
+
+func (v *DefaultLayoutValidator) validateComposedNode(
+	path string,
+	raw any,
+	depth int,
+	issues *[]domain.ValidationIssue,
+) {
+	if depth > maxComposedNodeDepth {
+		*issues = append(*issues, domain.ValidationIssue{
+			Path:    path,
+			Code:    "max_depth_exceeded",
+			Message: fmt.Sprintf("composed_block exceeds maximum nesting depth of %d", maxComposedNodeDepth),
+		})
+		return
+	}
+
+	switch node := raw.(type) {
+	case snippets.ComposedNode:
+		validateComposedNodeKind(path, node.Kind, issues)
+		for i, ch := range node.Children {
+			v.validateComposedNode(fmt.Sprintf("%s/children/%d", path, i), ch, depth+1, issues)
+		}
+	case *snippets.ComposedNode:
+		if node == nil {
+			*issues = append(*issues, domain.ValidationIssue{
+				Path:    path,
+				Code:    "invalid_composed_node",
+				Message: "composed_block node must be an object",
+			})
+			return
+		}
+		validateComposedNodeKind(path, node.Kind, issues)
+		for i, ch := range node.Children {
+			v.validateComposedNode(fmt.Sprintf("%s/children/%d", path, i), ch, depth+1, issues)
+		}
+	case map[string]any:
+		kind, _ := node["kind"].(string)
+		validateComposedNodeKind(path, kind, issues)
+		rawChildren, exists := node["children"]
+		if !exists || rawChildren == nil {
+			return
+		}
+		childrenPath := path + "/children"
+		switch children := rawChildren.(type) {
+		case []snippets.ComposedNode:
+			for i, ch := range children {
+				v.validateComposedNode(fmt.Sprintf("%s/%d", childrenPath, i), ch, depth+1, issues)
+			}
+		case []map[string]any:
+			for i, ch := range children {
+				v.validateComposedNode(fmt.Sprintf("%s/%d", childrenPath, i), ch, depth+1, issues)
+			}
+		case []any:
+			for i, ch := range children {
+				v.validateComposedNode(fmt.Sprintf("%s/%d", childrenPath, i), ch, depth+1, issues)
+			}
+		default:
+			*issues = append(*issues, domain.ValidationIssue{
+				Path:    childrenPath,
+				Code:    "invalid_composed_children",
+				Message: "composed_block children must be a list of nodes",
+			})
+		}
+	default:
+		*issues = append(*issues, domain.ValidationIssue{
+			Path:    path,
+			Code:    "invalid_composed_node",
+			Message: "composed_block node must be an object",
+		})
+	}
+}
+
+func validateComposedNodeKind(path, kind string, issues *[]domain.ValidationIssue) {
+	trimmed := strings.TrimSpace(kind)
+	if trimmed == "" {
+		*issues = append(*issues, domain.ValidationIssue{
+			Path:    path + "/kind",
+			Code:    "required",
+			Message: "composed_block node requires kind",
+		})
+		return
+	}
+	if _, ok := validComposedNodeKinds[trimmed]; !ok {
+		*issues = append(*issues, domain.ValidationIssue{
+			Path:    path + "/kind",
+			Code:    "invalid_composed_node_kind",
+			Message: fmt.Sprintf("unsupported composed_block node kind %q", kind),
+		})
+	}
 }

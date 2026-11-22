@@ -62,7 +62,7 @@ func (f WidgetTransformerFunc) Transform(input TransformInput) (snippets.Snippet
 }
 
 // Registry is an Open/Closed, concurrency-safe registry of WidgetTransformers keyed by
-// KMP snippet_type. Callers may register custom 18th+ snippet types without modifying
+// KMP snippet_type. Callers may register custom 22nd+ snippet types without modifying
 // built-in transformers.
 type Registry struct {
 	mu           sync.RWMutex

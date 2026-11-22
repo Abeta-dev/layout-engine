@@ -369,26 +369,30 @@ func buildSeedFreshHomeLayout(tenantID string, now time.Time) domain.Layout {
 		PageID:     "fresh-home",
 		ShowLoader: true,
 	})
+	freshCart := buildSeedFloatingCart(
+		"2 items · $8.48",
+		"8 MINS",
+		"fresh_express_checkout",
+		"Express Checkout",
+		"/api/v1/fresh/orders/express",
+		map[string]any{"vertical": "abeta-fresh", "delivery_eta_mins": 8},
+	)
+	freshCart.FreeDeliveryThresholdCents = atoms.IntPtr(1500)
+	freshCart.NudgePrefix = "Add"
+	freshCart.UnlockedLabel = "Free 8-Min Delivery Unlocked!"
 
 	return domain.Layout{
 		ID:               "lay_fresh_home",
 		TenantID:         tenantID,
 		Slug:             "fresh-home",
 		Title:            "Abeta Fresh — 8-Min Grocery",
-		Description:      "Quick-commerce grocery vertical home with search bar, category chips, city-personalized hero banner, responsive product grid, and express cart dock.",
+		Description:      "Quick-commerce grocery vertical home with scrolling offer marquee, Flash Drop urgency nudge, molded loyalty stamp card, search bar, category chips, responsive product grid, and free-delivery threshold cart dock.",
 		Status:           domain.LayoutStatusPublished,
 		PublishedVersion: 1,
 		DraftVersion:     1,
 		PageConfig: domain.LayoutPageConfig{
-			Toolbar: buildSeedVerticalToolbar("Abeta Fresh", "8-Min Express Hub · {{city}}", "back_from_fresh_home"),
-			FloatingCart: buildSeedFloatingCart(
-				"2 items · $8.48",
-				"8 MINS",
-				"fresh_express_checkout",
-				"Express Checkout",
-				"/api/v1/fresh/orders/express",
-				map[string]any{"vertical": "abeta-fresh", "delivery_eta_mins": 8},
-			),
+			Toolbar:        buildSeedVerticalToolbar("Abeta Fresh", "8-Min Express Hub · {{city}}", "back_from_fresh_home"),
+			FloatingCart:   freshCart,
 			AdaptiveLayout: buildSeedCenteredAdaptive(1120),
 			PullToRefresh:  &pullRefresh,
 			PageActions: []actions.ActionTrigger{
@@ -399,11 +403,14 @@ func buildSeedFreshHomeLayout(tenantID string, now time.Time) domain.Layout {
 			},
 		},
 		Slots: []domain.LayoutSlot{
-			{SlotID: "slot_fresh_search", WidgetID: "w_fresh_search_bar", Position: 0, Pinned: true, Enabled: true},
-			{SlotID: "slot_fresh_chips", WidgetID: "w_fresh_category_chips", Position: 1, Enabled: true},
-			{SlotID: "slot_fresh_hero", WidgetID: "w_hero_banner", Position: 2, Enabled: true},
-			{SlotID: "slot_fresh_grid", WidgetID: "w_fresh_grid", Position: 3, Enabled: true},
-			{SlotID: "slot_fresh_carousel", WidgetID: "w_flash_carousel", Position: 4, Enabled: true},
+			{SlotID: "slot_fresh_marquee", WidgetID: "w_fresh_offer_marquee", Position: 0, Pinned: true, Enabled: true},
+			{SlotID: "slot_fresh_search", WidgetID: "w_fresh_search_bar", Position: 1, Pinned: true, Enabled: true},
+			{SlotID: "slot_fresh_flash_nudge", WidgetID: "w_fresh_flash_nudge", Position: 2, Enabled: true},
+			{SlotID: "slot_fresh_chips", WidgetID: "w_fresh_category_chips", Position: 3, Enabled: true},
+			{SlotID: "slot_fresh_hero", WidgetID: "w_hero_banner", Position: 4, Enabled: true},
+			{SlotID: "slot_fresh_grid", WidgetID: "w_fresh_grid", Position: 5, Enabled: true},
+			{SlotID: "slot_fresh_loyalty", WidgetID: "w_fresh_loyalty_composed", Position: 6, Enabled: true},
+			{SlotID: "slot_fresh_carousel", WidgetID: "w_flash_carousel", Position: 7, Enabled: true},
 		},
 		Tags:      []string{"vertical", "grocery", "express"},
 		CreatedAt: now,

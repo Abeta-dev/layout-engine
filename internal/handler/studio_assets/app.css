@@ -2187,6 +2187,468 @@ textarea {
   flex-shrink: 0;
 }
 
+/* ── 7 Ambient MotionLoopEffects ─────────────────────────────────────────── */
+@keyframes kmpLoopPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.78; transform: scale(1.03); }
+}
+@keyframes kmpLoopShimmer {
+  0% { filter: brightness(1); }
+  50% { filter: brightness(1.16); }
+  100% { filter: brightness(1); }
+}
+@keyframes kmpLoopWiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-6deg); }
+  75% { transform: rotate(6deg); }
+}
+@keyframes kmpLoopFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+@keyframes kmpLoopHeartbeat {
+  0%, 100% { transform: scale(1); }
+  18% { transform: scale(1.08); }
+  36% { transform: scale(0.98); }
+  54% { transform: scale(1.05); }
+}
+@keyframes kmpLoopGlowRing {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.35); }
+  50% { box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.14); }
+}
+@keyframes kmpMarqueeScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes kmpTrackerPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.45); }
+  50% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+}
+
+.kmp-loop-pulse { animation: kmpLoopPulse 1.8s ease-in-out infinite; }
+.kmp-loop-shimmer { animation: kmpLoopShimmer 2.1s ease-in-out infinite; }
+.kmp-loop-wiggle { animation: kmpLoopWiggle 1.6s ease-in-out infinite; display: inline-flex; }
+.kmp-loop-float { animation: kmpLoopFloat 2.4s ease-in-out infinite; }
+.kmp-loop-heartbeat { animation: kmpLoopHeartbeat 1.5s ease-in-out infinite; }
+.kmp-loop-glow_ring { animation: kmpLoopGlowRing 2.2s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .kmp-loop-pulse,
+  .kmp-loop-shimmer,
+  .kmp-loop-wiggle,
+  .kmp-loop-float,
+  .kmp-loop-heartbeat,
+  .kmp-loop-glow_ring,
+  .kmp-marquee-track,
+  .kmp-step-dot.active {
+    animation: none !important;
+  }
+}
+
+/* Countdown & Rolling Counter Atoms */
+.kmp-countdown-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 750;
+  background: rgba(245, 158, 11, 0.16);
+  color: #B45309;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  white-space: nowrap;
+}
+.kmp-dark .kmp-countdown-pill {
+  color: #FBBF24;
+  background: rgba(245, 158, 11, 0.2);
+}
+.kmp-countdown-pill.urgent {
+  background: rgba(244, 63, 94, 0.16);
+  color: #E11D48;
+  border-color: rgba(244, 63, 94, 0.38);
+}
+.kmp-dark .kmp-countdown-pill.urgent {
+  color: #FB7185;
+}
+.kmp-countdown-label {
+  font-weight: 600;
+  opacity: 0.88;
+}
+.kmp-rolling-counter {
+  font-size: 18px;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+  color: var(--kmp-brand);
+}
+
+/* Nudge Bar Snippet */
+.kmp-nudge-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 11px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(16, 185, 129, 0.1));
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+.kmp-nudge-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.kmp-nudge-lead {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+.kmp-nudge-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  background: rgba(245, 158, 11, 0.18);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.kmp-nudge-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.kmp-nudge-pills {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+}
+.kmp-nudge-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: #F43F5E;
+  color: #FFFFFF;
+}
+.kmp-nudge-title {
+  font-size: 12px;
+  font-weight: 750;
+  color: var(--kmp-text);
+  line-height: 1.25;
+}
+.kmp-nudge-sub {
+  font-size: 10.5px;
+  color: var(--kmp-text-2);
+  line-height: 1.3;
+}
+.kmp-nudge-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+.kmp-nudge-cta {
+  padding: 4px 8px !important;
+  font-size: 10.5px !important;
+}
+.kmp-nudge-dismiss {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(15, 23, 42, 0.1);
+  color: var(--kmp-text-2);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.kmp-nudge-dismiss:hover {
+  background: rgba(244, 63, 94, 0.18);
+  color: #E11D48;
+}
+.kmp-nudge-progress {
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.12);
+  overflow: hidden;
+}
+.kmp-nudge-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #F59E0B, #10B981);
+  transition: width 0.25s ease;
+}
+
+/* Marquee Strip Offer Ticker */
+.kmp-marquee-strip {
+  overflow: hidden;
+  border-radius: 10px;
+  background: #0F172A;
+  color: #F8FAFC;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  padding: 6px 0;
+}
+.kmp-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: kmpMarqueeScroll 18s linear infinite;
+}
+.kmp-marquee-strip:hover .kmp-marquee-track {
+  animation-play-state: paused;
+}
+.kmp-marquee-group {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.kmp-marquee-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+  padding-left: 10px;
+}
+.kmp-marquee-icon {
+  font-size: 11px;
+}
+.kmp-marquee-badge {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: #10B981;
+  color: #052E16;
+  text-transform: uppercase;
+}
+.kmp-marquee-sep {
+  opacity: 0.45;
+  padding-left: 6px;
+}
+
+/* Order Tracker Snippet */
+.kmp-order-tracker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--kmp-surface);
+  border: 1px solid var(--kmp-border);
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.06);
+}
+.kmp-tracker-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.kmp-tracker-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 3px;
+}
+.kmp-tracker-code {
+  font-size: 10.5px;
+  font-weight: 750;
+  color: var(--kmp-text-2);
+  background: var(--kmp-surface-2);
+  padding: 1px 6px;
+  border-radius: 5px;
+}
+.kmp-tracker-steps {
+  display: flex;
+  flex-direction: column;
+}
+.kmp-tracker-step {
+  display: flex;
+  align-items: stretch;
+  gap: 9px;
+}
+.kmp-step-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 22px;
+  flex-shrink: 0;
+}
+.kmp-step-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  background: var(--kmp-surface-2);
+  color: var(--kmp-text-3);
+  border: 1.5px solid var(--kmp-border);
+}
+.kmp-step-dot.completed {
+  background: #10B981;
+  color: #FFFFFF;
+  border-color: #10B981;
+}
+.kmp-step-dot.active {
+  background: rgba(16, 185, 129, 0.16);
+  color: #059669;
+  border-color: #10B981;
+  animation: kmpTrackerPulse 1.6s ease-in-out infinite;
+}
+.kmp-step-line {
+  width: 2px;
+  flex: 1;
+  min-height: 16px;
+  margin: 2px 0;
+  background: var(--kmp-border);
+}
+.kmp-step-line.completed {
+  background: #10B981;
+}
+.kmp-step-body {
+  padding-bottom: 10px;
+  min-width: 0;
+}
+.kmp-tracker-step:last-child .kmp-step-body {
+  padding-bottom: 0;
+}
+.kmp-step-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--kmp-text);
+}
+.kmp-tracker-step.pending .kmp-step-label {
+  color: var(--kmp-text-3);
+  font-weight: 600;
+}
+.kmp-step-caption {
+  font-size: 10.5px;
+  color: var(--kmp-text-2);
+}
+.kmp-tracker-rider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 9px;
+  border-radius: 10px;
+  background: var(--kmp-surface-2);
+  border: 1px solid var(--kmp-border);
+}
+.kmp-tracker-rider-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.kmp-tracker-rider-name {
+  font-size: 11.5px;
+  font-weight: 750;
+  color: var(--kmp-text);
+}
+.kmp-tracker-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Atomic Snippet Molding Engine (Composed Block) */
+.kmp-composed-block {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.kmp-composed-recipe {
+  align-self: flex-end;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--violet);
+  background: var(--violet-soft);
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+.kmp-composed-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 11px;
+  border-radius: 13px;
+  background: var(--kmp-surface);
+  border: 1px solid var(--kmp-border);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+}
+.kmp-composed-column {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.kmp-composed-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 7px;
+}
+.kmp-composed-box {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.kmp-composed-flow-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.kmp-composed-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--kmp-surface-2);
+  color: var(--kmp-text-3);
+  border: 1px solid var(--kmp-border);
+}
+.kmp-composed-icon.done {
+  background: rgba(16, 185, 129, 0.16);
+  color: #059669;
+  border-color: rgba(16, 185, 129, 0.45);
+}
+.kmp-composed-img {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+.kmp-composed-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+}
+
 /* Floating Cart Dock */
 .kmp-floating-cart {
   position: absolute;
@@ -2198,11 +2660,48 @@ textarea {
   background: #0C831F;
   color: #FFFFFF;
   display: flex;
+  flex-direction: column;
+  gap: 7px;
+  box-shadow: 0 10px 24px rgba(12, 131, 31, 0.36);
+  z-index: 5;
+}
+.kmp-floating-cart-row {
+  display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  box-shadow: 0 10px 24px rgba(12, 131, 31, 0.36);
-  z-index: 5;
+}
+.kmp-cart-nudge {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.14);
+  font-size: 10.5px;
+  font-weight: 700;
+}
+.kmp-cart-nudge.unlocked {
+  background: rgba(250, 204, 21, 0.24);
+  color: #FEF9C3;
+}
+.kmp-cart-nudge-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.kmp-cart-nudge-track {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.24);
+  overflow: hidden;
+}
+.kmp-cart-nudge-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: #FDE047;
+  transition: width 0.25s ease;
 }
 .kmp-cart-info {
   display: flex;

@@ -307,3 +307,86 @@ func TestLLMsTxtEndpoints(t *testing.T) {
 		}
 	}
 }
+
+func TestV030SnippetsEndToEndResolutionAndValidation(t *testing.T) {
+	t.Parallel()
+	r := setupTestRouter(t)
+
+	// 1. Verify Studio lists all 21 KMP v1 snippet templates.
+	rec, env := doJSON(t, r, http.MethodGet, "/api/v1/studio/templates", nil, nil)
+	if rec.Code != http.StatusOK || !env.Success {
+		t.Fatalf("GET /api/v1/studio/templates failed: code=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var tplResp struct {
+		Templates []domain.WidgetTemplate `json:"templates"`
+	}
+	if err := json.Unmarshal(env.Data, &tplResp); err != nil {
+		t.Fatalf("decode templates: %v", err)
+	}
+	if len(tplResp.Templates) != 21 {
+		t.Fatalf("expected 21 templates, got %d", len(tplResp.Templates))
+	}
+
+	// 2. Resolve fresh-home live (non-fallback) with marquee_strip, nudge_bar, composed_block & threshold cart.
+	rec, env = doJSON(t, r, http.MethodGet, "/api/v1/pages/fresh-home?city=Mumbai&include_trace=true", nil, nil)
+	if rec.Code != http.StatusOK || !env.Success {
+		t.Fatalf("GET fresh-home failed: code=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var freshRes domain.ResolvedPageResult
+	if err := json.Unmarshal(env.Data, &freshRes); err != nil {
+		t.Fatalf("decode fresh-home: %v", err)
+	}
+	if freshRes.Trace.UsedFallback {
+		t.Fatalf("expected fresh-home to resolve from live snapshot, got fallback: %+v", freshRes.Trace)
+	}
+	if freshRes.Page.FloatingCart == nil || freshRes.Page.FloatingCart.FreeDeliveryThresholdCents == nil || *freshRes.Page.FloatingCart.FreeDeliveryThresholdCents != 1500 {
+		t.Fatalf("expected fresh-home free_delivery_threshold_cents=1500, got %+v", freshRes.Page.FloatingCart)
+	}
+	rawFresh, _ := json.Marshal(freshRes.Page)
+	for _, needle := range []string{`"marquee_strip"`, `"nudge_bar"`, `"composed_block"`, `"loyalty_stamp_card"`, `Mumbai`} {
+		if !strings.Contains(string(rawFresh), needle) {
+			t.Errorf("fresh-home payload missing %s", needle)
+		}
+	}
+
+	// 3. Resolve abeta-bites bites-order-track live with 4-step order_tracker.
+	rec, env = doJSON(t, r, http.MethodGet, "/api/v1/pages/bites-order-track?tenant=abeta-bites&city=Pune&include_trace=true", nil, nil)
+	if rec.Code != http.StatusOK || !env.Success {
+		t.Fatalf("GET bites-order-track failed: code=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var bitesRes domain.ResolvedPageResult
+	if err := json.Unmarshal(env.Data, &bitesRes); err != nil {
+		t.Fatalf("decode bites-order-track: %v", err)
+	}
+	if bitesRes.Trace.UsedFallback {
+		t.Fatalf("expected bites-order-track to resolve from live snapshot, got fallback: %+v", bitesRes.Trace)
+	}
+	rawBites, _ := json.Marshal(bitesRes.Page)
+	for _, needle := range []string{`"order_tracker"`, `#BTS-4091`, `Pune`} {
+		if !strings.Contains(string(rawBites), needle) {
+			t.Errorf("bites-order-track payload missing %s", needle)
+		}
+	}
+
+	// 4. Validate both enriched layouts through DefaultLayoutValidator via Studio API.
+	for _, tc := range []struct {
+		tenant string
+		slug   string
+	}{
+		{"abeta-fresh", "fresh-home"},
+		{"abeta-bites", "bites-order-track"},
+	} {
+		rec, env = doJSON(t, r, http.MethodPost, "/api/v1/studio/layouts/"+tc.slug+"/validate", nil, map[string]string{
+			"X-Tenant-ID": tc.tenant,
+		})
+		if rec.Code != http.StatusOK || !env.Success {
+			t.Fatalf("validate %s/%s failed: code=%d body=%s", tc.tenant, tc.slug, rec.Code, rec.Body.String())
+		}
+		var valResp struct {
+			Valid bool `json:"valid"`
+		}
+		if err := json.Unmarshal(env.Data, &valResp); err != nil || !valResp.Valid {
+			t.Fatalf("expected %s/%s to validate cleanly, got body=%s", tc.tenant, tc.slug, string(env.Data))
+		}
+	}
+}

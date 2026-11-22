@@ -14,13 +14,13 @@ import (
 	"github.com/abeta-dev/layout-engine/pkg/transformer"
 )
 
-func TestDefaultRegistry_All17SnippetTypesRoundTrip(t *testing.T) {
+func TestDefaultRegistry_All21SnippetTypesRoundTrip(t *testing.T) {
 	t.Parallel()
 
 	reg := transformer.NewDefaultRegistry()
 	supported := reg.SupportedTypes()
-	if len(supported) != 17 {
-		t.Fatalf("SupportedTypes() len = %d, want 17 (%v)", len(supported), supported)
+	if len(supported) != 21 {
+		t.Fatalf("SupportedTypes() len = %d, want 21 (%v)", len(supported), supported)
 	}
 
 	ctx := domain.RequestContext{
@@ -277,6 +277,64 @@ func TestDefaultRegistry_All17SnippetTypesRoundTrip(t *testing.T) {
 				},
 			},
 		},
+		"w_nudge_bar": {
+			ID:          "w_nudge_bar",
+			SnippetType: snippets.SnippetTypeNudgeBar,
+			Active:      true,
+			Props: map[string]any{
+				"title":    "Flash Drop in {{city}}",
+				"subtitle": "Free delivery above $15",
+				"icon":     "bolt",
+				"badge":    "FLASH",
+				"progress": 0.7,
+				"countdown": map[string]any{
+					"countdown_id":      "cd_flash",
+					"remaining_seconds": 300,
+					"label":             "Ends in",
+				},
+			},
+		},
+		"w_marquee_strip": {
+			ID:          "w_marquee_strip",
+			SnippetType: snippets.SnippetTypeMarqueeStrip,
+			Active:      true,
+			Props: map[string]any{
+				"items": []map[string]any{
+					{"id": "m1", "text": "8-Min Chilled Delivery in {{city}}", "icon": "bolt", "badge": "LIVE"},
+					{"id": "m2", "text": "FRESH20 — 20% Off", "icon": "star"},
+				},
+			},
+		},
+		"w_order_tracker": {
+			ID:          "w_order_tracker",
+			SnippetType: snippets.SnippetTypeOrderTracker,
+			Active:      true,
+			Props: map[string]any{
+				"order_code": "#BTS-4091",
+				"headline":   "Arriving in {{city}} in 12 mins",
+				"eta_badge":  "12 MINS",
+				"rider_name": "Karan M.",
+				"steps": []map[string]any{
+					{"id": "s1", "label": "Confirmed", "icon": "check_circle", "completed": true},
+					{"id": "s2", "label": "En Route", "icon": "local_shipping", "active": true},
+				},
+			},
+		},
+		"w_composed_block": {
+			ID:          "w_composed_block",
+			SnippetType: snippets.SnippetTypeComposedBlock,
+			Active:      true,
+			Props: map[string]any{
+				"recipe_name": "loyalty_stamp_card",
+				"root": map[string]any{
+					"kind": snippets.ComposedNodeCard,
+					"children": []map[string]any{
+						{"kind": snippets.ComposedNodeText, "text": "Loyalty Rewards · {{city}}"},
+						{"kind": snippets.ComposedNodeTag, "tag": "4/6 STAMPS"},
+					},
+				},
+			},
+		},
 	}
 
 	slots := []domain.LayoutSlot{
@@ -297,6 +355,10 @@ func TestDefaultRegistry_All17SnippetTypesRoundTrip(t *testing.T) {
 		{SlotID: "s_swipe_deck", WidgetID: "w_swipe_deck", Position: 14, Enabled: true},
 		{SlotID: "s_search_bar", WidgetID: "w_search_bar", Position: 15, Enabled: true},
 		{SlotID: "s_chip_group", WidgetID: "w_chip_group", Position: 16, Enabled: true},
+		{SlotID: "s_nudge_bar", WidgetID: "w_nudge_bar", Position: 17, Enabled: true},
+		{SlotID: "s_marquee_strip", WidgetID: "w_marquee_strip", Position: 18, Enabled: true},
+		{SlotID: "s_order_tracker", WidgetID: "w_order_tracker", Position: 19, Enabled: true},
+		{SlotID: "s_composed_block", WidgetID: "w_composed_block", Position: 20, Enabled: true},
 	}
 
 	pageCfg := domain.LayoutPageConfig{
@@ -305,8 +367,11 @@ func TestDefaultRegistry_All17SnippetTypesRoundTrip(t *testing.T) {
 			Subtitle: &atoms.TextAtom{Text: "Delivering to {{zone}}"},
 		},
 		FloatingCart: &snippets.FloatingCartSpec{
-			Label: "View Cart ({{city}})",
-			CTA:   atoms.NewButton("btn_cart", "Checkout", "primary", nil),
+			Label:                      "View Cart ({{city}})",
+			CTA:                        atoms.NewButton("btn_cart", "Checkout", "primary", nil),
+			FreeDeliveryThresholdCents: atoms.IntPtr(1500),
+			NudgePrefix:                "Add for {{city}}",
+			UnlockedLabel:              "Free Delivery Unlocked in {{city}}!",
 		},
 		AdaptiveLayout: &snippets.AdaptivePageSpec{
 			LayoutMode:          snippets.LayoutModeSplitPane,
@@ -355,15 +420,18 @@ func TestDefaultRegistry_All17SnippetTypesRoundTrip(t *testing.T) {
 	if decoded.FloatingCart == nil || decoded.FloatingCart.Label != "View Cart (Bengaluru)" {
 		t.Fatalf("floating cart label not interpolated: %+v", decoded.FloatingCart)
 	}
+	if decoded.FloatingCart.FreeDeliveryThresholdCents == nil || *decoded.FloatingCart.FreeDeliveryThresholdCents != 1500 || decoded.FloatingCart.UnlockedLabel != "Free Delivery Unlocked in Bengaluru!" {
+		t.Fatalf("floating cart free-delivery threshold nudge not preserved/interpolated: %+v", decoded.FloatingCart)
+	}
 	if decoded.Tracking == nil || decoded.Tracking.EventName != "page_view" {
 		t.Fatalf("expected page_view tracking meta, got %+v", decoded.Tracking)
 	}
-	if len(decoded.Snippets) != 17 {
-		t.Fatalf("expected 17 snippets, got %d", len(decoded.Snippets))
+	if len(decoded.Snippets) != 21 {
+		t.Fatalf("expected 21 snippets, got %d", len(decoded.Snippets))
 	}
 
-	// Verify every single one of the 17 snippet types decodes cleanly into its KMP wire struct.
-	seenTypes := make(map[string]bool, 17)
+	// Verify every single one of the 21 snippet types decodes cleanly into its KMP wire struct.
+	seenTypes := make(map[string]bool, 21)
 	for _, env := range decoded.Snippets {
 		seenTypes[env.SnippetType] = true
 		switch env.SnippetType {
@@ -475,11 +543,39 @@ func TestDefaultRegistry_All17SnippetTypesRoundTrip(t *testing.T) {
 			} else if d.Title == nil || d.Title.Text != "Filter in Bengaluru" || d.Chips[1].Icon == nil || d.Chips[1].Icon.Name != "bolt" {
 				t.Errorf("chip_group promotion/interpolation failed: %+v", d)
 			}
+		case snippets.SnippetTypeNudgeBar:
+			d, err := snippets.DecodeSnippetData[snippets.NudgeBarSnippetData](env)
+			if err != nil || d.NudgeID != "s_nudge_bar" || !d.Dismissible || d.Title.Text != "Flash Drop in Bengaluru" {
+				t.Errorf("nudge_bar decode failed: err=%v data=%+v", err, d)
+			} else if d.Countdown == nil || d.Countdown.RemainingSeconds != 300 || d.Badge == nil || d.Badge.Label != "FLASH" {
+				t.Errorf("nudge_bar countdown/badge failed: %+v", d)
+			}
+		case snippets.SnippetTypeMarqueeStrip:
+			d, err := snippets.DecodeSnippetData[snippets.MarqueeStripSnippetData](env)
+			if err != nil || d.StripID != "s_marquee_strip" || d.VelocityDpPerSec != 48 || d.Separator != "•" || len(d.Items) != 2 {
+				t.Errorf("marquee_strip decode failed: err=%v data=%+v", err, d)
+			} else if d.Items[0].Text != "8-Min Chilled Delivery in Bengaluru" || d.Items[0].Badge == nil || d.Items[0].Badge.Label != "LIVE" {
+				t.Errorf("marquee_strip item interpolation/promotion failed: %+v", d.Items[0])
+			}
+		case snippets.SnippetTypeOrderTracker:
+			d, err := snippets.DecodeSnippetData[snippets.OrderTrackerSnippetData](env)
+			if err != nil || d.TrackerID != "s_order_tracker" || d.OrderCode != "#BTS-4091" || d.Headline.Text != "Arriving in Bengaluru in 12 mins" {
+				t.Errorf("order_tracker decode failed: err=%v data=%+v", err, d)
+			} else if d.EtaBadge == nil || d.EtaBadge.Label != "12 MINS" || len(d.Steps) != 2 {
+				t.Errorf("order_tracker eta/steps failed: %+v", d)
+			}
+		case snippets.SnippetTypeComposedBlock:
+			d, err := snippets.DecodeSnippetData[snippets.ComposedBlockSnippetData](env)
+			if err != nil || d.BlockID != "s_composed_block" || d.Root.Kind != snippets.ComposedNodeCard || len(d.Root.Children) != 2 {
+				t.Errorf("composed_block decode failed: err=%v data=%+v", err, d)
+			} else if d.Root.Children[0].Text == nil || d.Root.Children[0].Text.Text != "Loyalty Rewards · Bengaluru" {
+				t.Errorf("composed_block child interpolation failed: %+v", d.Root.Children[0])
+			}
 		}
 	}
 
-	if len(seenTypes) != 17 {
-		t.Fatalf("expected all 17 snippet types in page, got %d", len(seenTypes))
+	if len(seenTypes) != 21 {
+		t.Fatalf("expected all 21 snippet types in page, got %d", len(seenTypes))
 	}
 
 	// Ensure caller pageCfg was not mutated by interpolation.
@@ -550,8 +646,8 @@ func TestRegistry_CustomOCPTransformerAndCycleGuard(t *testing.T) {
 		},
 	})
 
-	if len(reg.SupportedTypes()) != 18 {
-		t.Fatalf("expected 18 supported types after custom registration, got %d", len(reg.SupportedTypes()))
+	if len(reg.SupportedTypes()) != 22 {
+		t.Fatalf("expected 22 supported types after custom registration, got %d", len(reg.SupportedTypes()))
 	}
 
 	env, err := reg.Transform(transformer.TransformInput{

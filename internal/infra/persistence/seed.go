@@ -33,7 +33,7 @@ type seedWorkspaceSpec struct {
 
 // SeedDefaultData idempotently populates all 6 multi-tenant vertical workspaces
 // (abeta-fresh, abeta-bites, abeta-pulse, abeta-mart, abeta-spark, abeta-trade),
-// each with all 17 canonical KMP v1 widget templates, curated widgets, targeting
+// each with all 21 canonical KMP v1 widget templates, curated widgets, targeting
 // and slotting rules, published layouts, immutable v1 snapshots, hydrated
 // fallbacks, splash configs, and design token overrides. Safe on every startup.
 func SeedDefaultData(ctx context.Context, store domain.Store) error {
@@ -187,7 +187,7 @@ func buildFreshWorkspaceSpec(now time.Time) seedWorkspaceSpec {
 		SplashConfigs:    seedSplashConfigs(defaultSeedTenantID, now),
 		TokenOverrides:   seedTokenOverrides(defaultSeedTenantID, now),
 		ChangeLogID:      "chg_seed_bootstrap",
-		ChangeLogSummary: "Bootstrapped Abeta Fresh quick-commerce workspace with 8 published layouts, 17 templates, and 21 widgets",
+		ChangeLogSummary: "Bootstrapped Abeta Fresh quick-commerce workspace with 8 published layouts, 21 templates, and 24 widgets",
 	}
 }
 

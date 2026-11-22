@@ -10,8 +10,8 @@ The engine ships with a single-binary embedded Visual Layout Studio SPA served a
 
 From `/studio`, you can:
 1. **Switch Tenants** across all **6 pre-seeded vertical workspaces** (`abeta-fresh`, `abeta-bites`, `abeta-pulse`, `abeta-mart`, `abeta-spark`, `abeta-trade`) or custom workspaces.
-2. **Browse all 17 KMP `v1` Snippet Templates** (including `search_bar`, `chip_group`, and `swipe_deck`) and inspect/create reusable **Widgets**.
-3. **Edit Draft Layouts**: reorder slots, bind targeting rules or UTC schedules per slot, lock critical hero banners with `pinned: true`, and configure page-level chrome (`ToolbarSpec`, `FloatingCartSpec`, `AdaptivePageSpec`, `PaginationSpec`, `PullToRefresh`).
+2. **Browse all 21 KMP `v1` Snippet Templates** (`bff@v0.3.0`, including `search_bar`, `chip_group`, `swipe_deck`, `nudge_bar`, `marquee_strip`, `order_tracker`, and the **`composed_block`** Atomic Snippet Molding Engine) and inspect/create reusable **Widgets** with 7 ambient `MotionLoopEffect`s (`pulse`, `shimmer`, `wiggle`, `float`, `heartbeat`, `glow_ring`, `marquee`).
+3. **Edit Draft Layouts**: reorder slots, bind targeting rules or UTC schedules per slot, lock critical hero banners with `pinned: true`, and configure page-level chrome (`ToolbarSpec`, `FloatingCartSpec` with free-delivery threshold nudges, `AdaptivePageSpec`, `PaginationSpec`, `PullToRefresh`).
 4. **Simulate Live Contexts**: preview either the active **Published Snapshot** or **Draft** (`POST /api/v1/studio/layouts/:slug/preview`) for any combination of platform, app version, city, zone, user segment, user ID, window class, dark mode, custom attributes, and simulated timestamp (`at`).
 5. **Inspect `ResolutionTrace`**: see exact matched rules, applied slotting rules, skipped slots, fallback usage, and resolution latency in milliseconds.
 6. **Validate, Publish, Rollback & Audit**: validate drafts before publishing immutable snapshots, promote a fallback snapshot, roll back to any historical version, and review field-level JSON diffs in the **ChangeLog**.
@@ -39,10 +39,11 @@ Calling `POST /api/v1/studio/layouts/:slug/validate` (and automatically during `
 - Non-empty, URL-safe `slug` matching `^[a-z0-9][a-z0-9_-]*$` and non-empty `title`.
 - Valid `page_config.adaptive_layout.layout_mode` (`single_column`, `centered`, or `split_pane`).
 - Unique non-empty `slot_id` across all slots.
-- Every enabled slot references an existing `widget_id` whose `snippet_type` is one of the **17 KMP `v1` SnippetTypes** (`header_v1`, `banner_v1`, `metric_card`, `card_v1`, `action_row`, `form_v1`, `empty_state`, `divider`, `spacer`, `carousel`, `grid`, `tabs`, `accordion`, `product_card`, `search_bar`, `chip_group`, `swipe_deck`).
+- Every enabled slot references an existing `widget_id` whose `snippet_type` is one of the **21 KMP `v1` SnippetTypes** (`header_v1`, `banner_v1`, `metric_card`, `card_v1`, `action_row`, `form_v1`, `empty_state`, `divider`, `spacer`, `carousel`, `grid`, `tabs`, `accordion`, `product_card`, `search_bar`, `chip_group`, `swipe_deck`, `nudge_bar`, `marquee_strip`, `order_tracker`, `composed_block`).
 - Positive integer `columns` on `grid` widgets.
 - Valid inline snippet envelopes (`snippet_id` + supported `snippet_type`) on `carousel`, `grid`, `accordion`, and `tabs`.
 - Non-empty `id` and `title` on every tab entry in `tabs`.
+- Non-empty `title` (and optional `progress` in `0..1`) on `nudge_bar`, non-empty `text` on every `marquee_strip` item, non-empty `headline` and valid `steps` on `order_tracker`, and a valid `root` tree on **`composed_block`** using the 17 canonical `ComposedNodeKind`s (`column`, `row`, `box`, `card`, `flow_row`, `text`, `button`, `tag`, `icon`, `image`, `avatar`, `progress`, `divider`, `spacer`, `stepper`, `countdown`, `rolling_counter`) with enforced **`maxDepth <= 6`** (`max_depth_exceeded`).
 - Recursive **cycle detection (`cycle_detected`)** across `child_widget_ids` / `widget_ids` container references.
 
 ---
@@ -121,14 +122,14 @@ Dynamic `SlottingRule` entries modify a published layout's base slot list at run
 
 ---
 
-## 6. Pre-Seeded Multi-Tenant Vertical Workspaces (6 Tenants · 17 SnippetTypes)
+## 6. Pre-Seeded Multi-Tenant Vertical Workspaces (6 Tenants · 21 SnippetTypes)
 
-On zero-config boot (`go run ./cmd/layout-engine`), `SeedDefaultData` idempotently populates **6 multi-tenant vertical workspaces**, each equipped with all **17 canonical KMP `v1` widget templates** (`header_v1`, `banner_v1`, `metric_card`, `card_v1`, `action_row`, `form_v1`, `empty_state`, `divider`, `spacer`, `carousel`, `grid`, `tabs`, `accordion`, `product_card`, `search_bar`, `chip_group`, `swipe_deck`), curated widgets, targeting rules, dynamic slotting rules, immutable `v1` snapshots, guaranteed fallbacks, splash configs, and branded token overrides:
+On zero-config boot (`go run ./cmd/layout-engine`), `SeedDefaultData` idempotently populates **6 multi-tenant vertical workspaces**, each equipped with all **21 canonical KMP `v1` widget templates** (`header_v1`, `banner_v1`, `metric_card`, `card_v1`, `action_row`, `form_v1`, `empty_state`, `divider`, `spacer`, `carousel`, `grid`, `tabs`, `accordion`, `product_card`, `search_bar`, `chip_group`, `swipe_deck`, `nudge_bar`, `marquee_strip`, `order_tracker`, `composed_block`), curated widgets, targeting rules, dynamic slotting rules, immutable `v1` snapshots, guaranteed fallbacks, splash configs, and branded token overrides:
 
 | Tenant Slug | Workspace Name | Published Layouts | Rules & Slotting Highlights |
 | :--- | :--- | :--- | :--- |
-| **`abeta-fresh`** *(default)* | Abeta Fresh — Quick-Commerce Grocery | `store-home`, `fresh-home`, `flash-sale`, `home`, `catalog`, `form-demo`, `containers`, `watch-status` | 5 targeting rules (VIP, Bengaluru, morning window, mobile SemVer, 50% rollout); VIP & morning slotting on `store-home` + VIP slotting on `fresh-home`; `FloatingCartSpec` -> `POST /api/v1/fresh/orders/express` |
-| **`abeta-bites`** | Abeta Bites — Food Delivery & Dining | `bites-home`, `bites-restaurant`, `bites-order-track` | `mumbai_or_vip` (`city == "Mumbai"` OR `segment == "vip"`) and `dinner_rush_window` slotting on `bites-home`; `FloatingCartSpec` -> `POST /api/v1/bites/orders` |
+| **`abeta-fresh`** *(default)* | Abeta Fresh — Quick-Commerce Grocery | `store-home`, `fresh-home`, `flash-sale`, `home`, `catalog`, `form-demo`, `containers`, `watch-status` | 5 targeting rules (VIP, Bengaluru, morning window, mobile SemVer, 50% rollout); VIP & morning slotting on `store-home` + VIP slotting on `fresh-home`; `fresh-home` features `marquee_strip`, Flash Drop `nudge_bar` (w/ `CountdownAtom`), molded `composed_block` Loyalty Stamp card & `FloatingCartSpec` (`free_delivery_threshold_cents: 1500`) -> `POST /api/v1/fresh/orders/express` |
+| **`abeta-bites`** | Abeta Bites — Food Delivery & Dining | `bites-home`, `bites-restaurant`, `bites-order-track` | `mumbai_or_vip` (`city == "Mumbai"` OR `segment == "vip"`) and `dinner_rush_window` slotting on `bites-home`; `FloatingCartSpec` -> `POST /api/v1/bites/orders`; 4-step animated `order_tracker` (`#BTS-4091`) on `bites-order-track` |
 | **`abeta-pulse`** | Abeta Pulse — Events, Movies & Dining Tickets | `pulse-home`, `pulse-event-detail` | `weekend_spotlight` (Fri–Sun UTC) slotting banner on `pulse-home`; event cards navigating to `pulse-event-detail` with seat-tier booking (`POST /api/v1/pulse/bookings`) |
 | **`abeta-mart`** | Abeta Mart — Multi-Category Marketplace | `mart-home`, `mart-product-detail` | `mart_vip_segment` VIP lightning deal slotting on `mart-home`; Lightning Deals `carousel`, responsive `grid`, and product specs `accordion` |
 | **`abeta-spark`** | Abeta Spark — Swipe Discovery & Matches | `spark-deck`, `spark-matches` | `evening_boost_window` slotting on `spark-deck`; 4-profile `swipe_deck` (`POST /api/v1/spark/swipe` + undo) and match `action_row` widgets |

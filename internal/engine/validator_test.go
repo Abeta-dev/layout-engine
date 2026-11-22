@@ -10,7 +10,7 @@ import (
 	"github.com/abeta-dev/layout-engine/internal/engine"
 )
 
-func TestSupportedSnippetTypes_All17CanonicalTypes(t *testing.T) {
+func TestSupportedSnippetTypes_All21CanonicalTypes(t *testing.T) {
 	t.Parallel()
 
 	want := []string{
@@ -20,12 +20,16 @@ func TestSupportedSnippetTypes_All17CanonicalTypes(t *testing.T) {
 		snippets.SnippetTypeCard,
 		snippets.SnippetTypeCarousel,
 		snippets.SnippetTypeChipGroup,
+		snippets.SnippetTypeComposedBlock,
 		snippets.SnippetTypeDivider,
 		snippets.SnippetTypeEmptyState,
 		snippets.SnippetTypeForm,
 		snippets.SnippetTypeGrid,
 		snippets.SnippetTypeHeader,
+		snippets.SnippetTypeMarqueeStrip,
 		snippets.SnippetTypeMetricCard,
+		snippets.SnippetTypeNudgeBar,
+		snippets.SnippetTypeOrderTracker,
 		snippets.SnippetTypeProductCard,
 		snippets.SnippetTypeSearchBar,
 		snippets.SnippetTypeSpacer,
@@ -34,8 +38,8 @@ func TestSupportedSnippetTypes_All17CanonicalTypes(t *testing.T) {
 	}
 
 	got := engine.SupportedSnippetTypes()
-	if len(got) != 17 {
-		t.Fatalf("SupportedSnippetTypes() len = %d, want 17 (%v)", len(got), got)
+	if len(got) != 21 {
+		t.Fatalf("SupportedSnippetTypes() len = %d, want 21 (%v)", len(got), got)
 	}
 	if !slices.Equal(got, want) {
 		t.Fatalf("SupportedSnippetTypes() = %v, want %v", got, want)

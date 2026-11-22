@@ -8,12 +8,16 @@
     'card_v1',
     'carousel',
     'chip_group',
+    'composed_block',
     'divider',
     'empty_state',
     'form_v1',
     'grid',
     'header_v1',
+    'marquee_strip',
     'metric_card',
+    'nudge_bar',
+    'order_tracker',
     'product_card',
     'search_bar',
     'spacer',
@@ -44,6 +48,7 @@
     deckIndex: {},
     searchQueries: {},
     chipSelections: {},
+    dismissedNudges: {},
     dragIndex: null,
     previewTimer: null,
   };
@@ -53,6 +58,7 @@
     state.deckIndex = {};
     state.searchQueries = {};
     state.chipSelections = {};
+    state.dismissedNudges = {};
   }
 
   const $ = (id) => document.getElementById(id);
@@ -110,10 +116,10 @@
 
   function snippetBadgeClass(type) {
     switch (type) {
-      case 'header_v1': case 'banner_v1': return 'badge-emerald';
-      case 'product_card': case 'metric_card': return 'badge-amber';
-      case 'grid': case 'carousel': case 'tabs': case 'accordion': return 'badge-sky';
-      case 'form_v1': case 'action_row': case 'chip_group': return 'badge-violet';
+      case 'header_v1': case 'banner_v1': case 'marquee_strip': return 'badge-emerald';
+      case 'product_card': case 'metric_card': case 'nudge_bar': return 'badge-amber';
+      case 'grid': case 'carousel': case 'tabs': case 'accordion': case 'order_tracker': return 'badge-sky';
+      case 'form_v1': case 'action_row': case 'chip_group': case 'composed_block': return 'badge-violet';
       case 'card_v1': case 'search_bar': return 'badge-teal';
       case 'empty_state': case 'swipe_deck': return 'badge-rose';
       default: return 'badge-neutral';
@@ -484,11 +490,13 @@
         slot.pinned ? 'slot-pinned' : '',
       ].filter(Boolean).join(' ');
       const titlePreview = textOf(w?.props?.title)
+        || textOf(w?.props?.headline)
         || textOf(w?.props?.label)
         || w?.props?.placeholder
+        || (w?.snippet_type === 'marquee_strip' && Array.isArray(w?.props?.items) ? `${w.props.items.length} scrolling offer${w.props.items.length === 1 ? '' : 's'}` : '')
+        || (w?.snippet_type === 'composed_block' ? (w?.props?.recipe_name ? `Recipe: ${w.props.recipe_name}` : `Composed (${w?.props?.root?.kind || 'tree'})`) : '')
         || (Array.isArray(w?.props?.cards) ? `${w.props.cards.length} discovery card${w.props.cards.length === 1 ? '' : 's'}` : '')
         || (Array.isArray(w?.props?.chips) ? `${w.props.chips.length} filter chip${w.props.chips.length === 1 ? '' : 's'}` : '')
-        || w?.props?.headline
         || w?.slug
         || '';
       const chips = [];
@@ -558,7 +566,7 @@
     });
   }
 
-  // ── Center Canvas — Live Device Preview (All 17 KMP v1 Snippets) ────────────
+  // ── Center Canvas — Live Device Preview (All 21 KMP v1 Snippets) ────────────
 
   function renderEmptyPreview() {
     const screen = $('device-screen');
@@ -615,15 +623,147 @@
       case 'bolt': case 'flash_on': return '⚡';
       case 'local_fire_department': case 'flame': case 'whatshot': return '🔥';
       case 'eco': case 'leaf': return '🌿';
-      case 'star': case 'grade': return '★';
+      case 'star': case 'grade': case 'sparkles': return '★';
       case 'location_on': case 'place': case 'pin': return '📍';
       case 'schedule': case 'timer': return '⏱';
-      case 'verified': case 'check_circle': return '✓';
+      case 'verified': case 'check_circle': case 'check': return '✓';
+      case 'radio_button_unchecked': return '○';
+      case 'local_shipping': return '🛵';
+      case 'home': return '🏠';
       case 'restaurant': case 'fastfood': return '🍽';
-      case 'shopping_bag': case 'storefront': return '🛍';
+      case 'shopping_bag': case 'storefront': case 'inventory_2': return '🛍';
       case 'music_note': case 'confirmation_number': return '♪';
       case 'trending_up': return '↗';
+      case 'wb_sunny': return '☀';
+      case 'notifications': return '🔔';
       default: return name ? '•' : '';
+    }
+  }
+
+  function motionLoopClass(motion) {
+    const loop = motion?.loop_effect;
+    switch (loop) {
+      case 'pulse':
+      case 'shimmer':
+      case 'wiggle':
+      case 'float':
+      case 'heartbeat':
+      case 'glow_ring':
+      case 'marquee':
+        return `kmp-loop-${loop}`;
+      default:
+        return '';
+    }
+  }
+
+  function formatCountdown(cd) {
+    if (!cd) return '';
+    const secs = Math.max(0, Number(cd.remaining_seconds || 0));
+    if (secs === 0 && cd.expired_text) return cd.expired_text;
+    const hrs = Math.floor(secs / 3600);
+    const mins = Math.floor((secs % 3600) / 60);
+    const rem = secs % 60;
+    const pad = (n) => String(n).padStart(2, '0');
+    if (cd.show_hours || hrs > 0) return `${pad(hrs)}:${pad(mins)}:${pad(rem)}`;
+    return `${pad(mins)}:${pad(rem)}`;
+  }
+
+  function renderCountdownPill(cd) {
+    if (!cd) return '';
+    const secs = Math.max(0, Number(cd.remaining_seconds || 0));
+    const urgent = secs <= Number(cd.urgent_threshold_seconds || 60);
+    const loopCls = motionLoopClass(cd.motion);
+    return `
+      <span class="kmp-countdown-pill ${urgent ? 'urgent' : ''} ${loopCls}">
+        ${cd.label ? `<span class="kmp-countdown-label">${esc(cd.label)}</span>` : ''}
+        <span class="mono">${esc(formatCountdown(cd))}</span>
+      </span>`;
+  }
+
+  function mapArrangementStyle(arr) {
+    switch (arr) {
+      case 'space_between': return 'justify-content:space-between';
+      case 'space_around': return 'justify-content:space-around';
+      case 'space_evenly': return 'justify-content:space-evenly';
+      case 'center': return 'justify-content:center';
+      case 'end': return 'justify-content:flex-end';
+      default: return '';
+    }
+  }
+
+  function renderComposedNode(node, depth = 0) {
+    if (!node || depth > 6) return '';
+    const kind = node.kind || '';
+    const loopCls = motionLoopClass(node.motion);
+    const gap = node.spacing_dp != null ? `gap:${Number(node.spacing_dp)}px;` : '';
+    const weight = node.weight != null && Number(node.weight) > 0 ? `flex:${Number(node.weight)} 1 0%;min-width:0;` : '';
+    const arr = mapArrangementStyle(node.main_axis_arrangement);
+    const alignItems = node.vertical_alignment === 'center' || node.alignment === 'center'
+      ? 'align-items:center;'
+      : (node.vertical_alignment === 'bottom' || node.alignment === 'end' ? 'align-items:flex-end;' : '');
+    const baseStyle = `${gap}${weight}${arr ? `${arr};` : ''}${alignItems}`;
+    const childrenHtml = Array.isArray(node.children)
+      ? node.children.map((ch) => renderComposedNode(ch, depth + 1)).join('')
+      : '';
+
+    switch (kind) {
+      case 'card':
+        return `<div class="kmp-composed-card ${loopCls}" style="${baseStyle}">${childrenHtml}</div>`;
+      case 'column':
+        return `<div class="kmp-composed-column ${loopCls}" style="${baseStyle}">${childrenHtml}</div>`;
+      case 'row':
+        return `<div class="kmp-composed-row ${loopCls}" style="${baseStyle}">${childrenHtml}</div>`;
+      case 'box':
+        return `<div class="kmp-composed-box ${loopCls}" style="${baseStyle}">${childrenHtml}</div>`;
+      case 'flow_row':
+        return `<div class="kmp-composed-flow-row ${loopCls}" style="${baseStyle}">${childrenHtml}</div>`;
+      case 'text': {
+        const token = node.text?.typography?.token || '';
+        const isTitle = token.includes('headline') || token.includes('title');
+        const isSmall = token.includes('small') || token.includes('label');
+        const cls = isTitle ? 'kmp-h-title' : (isSmall ? 'kmp-h-sub' : 'kmp-banner-body');
+        return `<div class="${cls} ${loopCls}" style="${weight}">${esc(textOf(node.text))}</div>`;
+      }
+      case 'button':
+        if (!node.button) return '';
+        return `<button type="button" class="kmp-btn ${node.button.variant === 'secondary' || node.button.variant === 'outline' ? 'kmp-btn-secondary' : 'kmp-btn-primary'} ${motionLoopClass(node.button.motion) || loopCls}">${esc(node.button.label || 'Action')}</button>`;
+      case 'tag':
+        if (!node.tag) return '';
+        return `<span class="kmp-tag ${motionLoopClass(node.tag.motion) || loopCls}">${esc(node.tag.label || textOf(node.tag))}</span>`;
+      case 'icon': {
+        const glyph = previewIconGlyph(node.icon);
+        const iconName = (node.icon?.name || '').toLowerCase();
+        const isDone = iconName === 'check_circle' || iconName === 'verified';
+        return `<span class="kmp-composed-icon ${isDone ? 'done' : ''} ${loopCls}" title="${esc(node.icon?.name || '')}">${esc(glyph || '•')}</span>`;
+      }
+      case 'image':
+        return node.image?.url
+          ? `<img class="kmp-composed-img ${loopCls}" src="${esc(node.image.url)}" alt="${esc(node.image.content_description || '')}" />`
+          : '';
+      case 'avatar':
+        return `<span class="kmp-avatar ${loopCls}">${esc(node.avatar?.initials || 'AB')}</span>`;
+      case 'progress': {
+        const pct = Math.min(100, Math.max(0, Math.round((Number(node.progress?.progress ?? node.progress?.value ?? 0)) * 100)));
+        return `
+          <div class="kmp-composed-progress ${loopCls}" style="${weight}">
+            <div class="kmp-progress-track"><div class="kmp-progress-fill" style="width:${pct}%"></div></div>
+            ${node.progress?.label ? `<div class="kmp-h-sub">${esc(node.progress.label)}</div>` : ''}
+          </div>`;
+      }
+      case 'divider':
+        return `<hr class="kmp-divider" />`;
+      case 'spacer':
+        return `<div style="height:${Number(node.spacer?.height_dp || 8)}px;width:${Number(node.spacer?.width_dp || 0)}px"></div>`;
+      case 'stepper': {
+        const qty = Number(node.stepper?.quantity || 0);
+        return `<span class="kmp-tag ${loopCls}">${qty > 0 ? `Qty ${qty}` : esc(node.stepper?.label || 'ADD')}</span>`;
+      }
+      case 'countdown':
+        return renderCountdownPill(node.countdown);
+      case 'rolling_counter':
+        return `<span class="kmp-rolling-counter mono ${loopCls}">${esc(node.counter_value || '0')}</span>`;
+      default:
+        return `<span class="mini-chip">${esc(kind || 'node')}</span>`;
     }
   }
 
@@ -672,16 +812,17 @@
 
       case 'product_card': {
         const pid = d.product_id || env.snippet_id;
-        const qty = state.cartCounts[pid] ?? (d.stepper?.value || 0);
+        const initQty = Number(d.stepper?.quantity ?? d.stepper?.value ?? 0);
+        const qty = pid in state.cartCounts ? state.cartCounts[pid] : initQty;
         const unit = d.unit_price_cents || 0;
         const stepperHtml = qty > 0
           ? `<div class="kmp-stepper has-qty">
-               <button type="button" class="kmp-stepper-btn" data-cart-dec="${esc(pid)}" data-unit="${unit}">−</button>
+               <button type="button" class="kmp-stepper-btn" data-cart-dec="${esc(pid)}" data-init-qty="${initQty}" data-unit="${unit}">−</button>
                <span class="kmp-stepper-qty">${qty}</span>
-               <button type="button" class="kmp-stepper-btn" data-cart-inc="${esc(pid)}" data-unit="${unit}">+</button>
+               <button type="button" class="kmp-stepper-btn" data-cart-inc="${esc(pid)}" data-init-qty="${initQty}" data-unit="${unit}">+</button>
              </div>`
           : `<div class="kmp-stepper">
-               <button type="button" class="kmp-stepper-add" data-cart-inc="${esc(pid)}" data-unit="${unit}">ADD</button>
+               <button type="button" class="kmp-stepper-add" data-cart-inc="${esc(pid)}" data-init-qty="${initQty}" data-unit="${unit}">ADD</button>
              </div>`;
         return `
           <div class="kmp-product-card">
@@ -859,6 +1000,119 @@
           </div>`;
       }
 
+      case 'nudge_bar': {
+        const nudgeId = d.nudge_id || env.snippet_id || 'nudge';
+        if (state.dismissedNudges[nudgeId]) return '';
+        const iconGlyph = d.icon ? previewIconGlyph(d.icon) : '';
+        const badgeLoop = motionLoopClass(d.badge?.motion);
+        const hasProg = typeof d.progress === 'number';
+        const pct = hasProg ? Math.min(100, Math.max(0, Math.round(d.progress * 100))) : 0;
+        const envLoop = motionLoopClass(env.motion);
+        return `
+          <div class="kmp-nudge-bar ${envLoop}">
+            <div class="kmp-nudge-top">
+              <div class="kmp-nudge-lead">
+                ${iconGlyph ? `<span class="kmp-nudge-icon" aria-hidden="true">${esc(iconGlyph)}</span>` : ''}
+                <div class="kmp-nudge-copy">
+                  <div class="kmp-nudge-pills">
+                    ${d.badge ? `<span class="kmp-nudge-badge ${badgeLoop}">${esc(d.badge.label || textOf(d.badge))}</span>` : ''}
+                    ${d.countdown ? renderCountdownPill(d.countdown) : ''}
+                  </div>
+                  <div class="kmp-nudge-title">${esc(textOf(d.title))}</div>
+                  ${d.subtitle ? `<div class="kmp-nudge-sub">${esc(textOf(d.subtitle))}</div>` : ''}
+                </div>
+              </div>
+              <div class="kmp-nudge-actions">
+                ${d.cta ? `<button type="button" class="kmp-btn kmp-btn-primary kmp-nudge-cta">${esc(d.cta.label || 'View')}</button>` : ''}
+                ${d.dismissible !== false ? `<button type="button" class="kmp-nudge-dismiss" data-dismiss-nudge="${esc(nudgeId)}" aria-label="Dismiss nudge">&times;</button>` : ''}
+              </div>
+            </div>
+            ${hasProg ? `<div class="kmp-nudge-progress"><div class="kmp-nudge-progress-fill" style="width:${pct}%"></div></div>` : ''}
+          </div>`;
+      }
+
+      case 'marquee_strip': {
+        const items = Array.isArray(d.items) ? d.items : [];
+        const sep = d.separator || '•';
+        const vel = Math.max(16, Number(d.velocity_dp_per_sec || 48));
+        const durationSec = Math.max(8, Math.min(32, Math.round((Math.max(items.length, 2) * 260) / vel)));
+        const renderItem = (it) => {
+          const glyph = it.icon ? previewIconGlyph(it.icon) : '';
+          return `
+            <span class="kmp-marquee-item">
+              ${glyph ? `<span class="kmp-marquee-icon" aria-hidden="true">${esc(glyph)}</span>` : ''}
+              ${it.badge ? `<span class="kmp-marquee-badge">${esc(it.badge.label || textOf(it.badge))}</span>` : ''}
+              <span>${esc(it.text || '')}</span>
+              <span class="kmp-marquee-sep" aria-hidden="true">${esc(sep)}</span>
+            </span>`;
+        };
+        const chunk = items.length ? items.map(renderItem).join('') : '<span class="kmp-marquee-item">Live Offer Ticker</span>';
+        return `
+          <div class="kmp-marquee-strip" aria-label="Offer ticker">
+            <div class="kmp-marquee-track" style="animation-duration:${durationSec}s">
+              <div class="kmp-marquee-group">${chunk}</div>
+              <div class="kmp-marquee-group" aria-hidden="true">${chunk}</div>
+            </div>
+          </div>`;
+      }
+
+      case 'order_tracker': {
+        const steps = Array.isArray(d.steps) ? d.steps : [];
+        const riderInitials = (d.rider_name || 'R').split(/\s+/).map((p) => p[0] || '').join('').slice(0, 2).toUpperCase();
+        return `
+          <div class="kmp-order-tracker ${motionLoopClass(env.motion)}">
+            <div class="kmp-tracker-head">
+              <div>
+                <div class="kmp-tracker-meta">
+                  ${d.order_code ? `<span class="kmp-tracker-code mono">${esc(d.order_code)}</span>` : ''}
+                  ${d.eta_badge ? `<span class="kmp-tag ${motionLoopClass(d.eta_badge.motion)}">${esc(d.eta_badge.label || textOf(d.eta_badge))}</span>` : ''}
+                </div>
+                <div class="kmp-h-title">${esc(textOf(d.headline))}</div>
+              </div>
+              ${d.eta_countdown ? renderCountdownPill(d.eta_countdown) : ''}
+            </div>
+            <div class="kmp-tracker-steps">
+              ${steps.map((st, idx) => {
+                const statusCls = st.completed ? 'completed' : (st.active ? 'active' : 'pending');
+                const glyph = st.completed ? '✓' : (st.icon ? previewIconGlyph(st.icon) : String(idx + 1));
+                return `
+                  <div class="kmp-tracker-step ${statusCls}">
+                    <div class="kmp-step-rail">
+                      <span class="kmp-step-dot ${statusCls}">${esc(glyph)}</span>
+                      ${idx < steps.length - 1 ? `<span class="kmp-step-line ${st.completed ? 'completed' : ''}"></span>` : ''}
+                    </div>
+                    <div class="kmp-step-body">
+                      <div class="kmp-step-label">${esc(st.label || st.id)}</div>
+                      ${st.caption ? `<div class="kmp-step-caption">${esc(st.caption)}</div>` : ''}
+                    </div>
+                  </div>`;
+              }).join('')}
+            </div>
+            ${d.rider_name ? `
+              <div class="kmp-tracker-rider">
+                <span class="kmp-avatar">${esc(riderInitials)}</span>
+                <div class="kmp-tracker-rider-copy">
+                  <div class="kmp-tracker-rider-name">${esc(d.rider_name)}</div>
+                  ${d.rider_caption ? `<div class="kmp-h-sub">${esc(d.rider_caption)}</div>` : ''}
+                </div>
+              </div>` : ''}
+            ${(d.primary_action || d.secondary_action) ? `
+              <div class="kmp-tracker-actions">
+                ${d.primary_action ? `<button type="button" class="kmp-btn kmp-btn-primary">${esc(d.primary_action.label || 'Track')}</button>` : ''}
+                ${d.secondary_action ? `<button type="button" class="kmp-btn kmp-btn-secondary">${esc(d.secondary_action.label || 'Share')}</button>` : ''}
+              </div>` : ''}
+          </div>`;
+      }
+
+      case 'composed_block': {
+        const envLoop = motionLoopClass(env.motion);
+        return `
+          <div class="kmp-composed-block ${envLoop}">
+            ${d.recipe_name ? `<div class="kmp-composed-recipe mono">${esc(d.recipe_name)}</div>` : ''}
+            ${renderComposedNode(d.root, 0)}
+          </div>`;
+      }
+
       case 'card_v1':
         return `
           <div class="kmp-card">
@@ -907,6 +1161,43 @@
     }
   }
 
+  function collectCartSummary(snippets) {
+    const byProduct = new Map();
+    const walk = (list) => {
+      if (!Array.isArray(list)) return;
+      for (const env of list) {
+        if (!env || typeof env !== 'object') continue;
+        const d = env.data || {};
+        if (env.snippet_type === 'product_card') {
+          const pid = d.product_id || env.snippet_id;
+          if (pid && !byProduct.has(pid)) {
+            const initQty = Number(d.stepper?.quantity ?? d.stepper?.value ?? 0);
+            const qty = pid in state.cartCounts ? state.cartCounts[pid] : initQty;
+            byProduct.set(pid, { qty, unit: Number(d.unit_price_cents || 0) });
+          }
+        }
+        if (Array.isArray(d.items)) walk(d.items);
+        if (Array.isArray(d.snippets)) walk(d.snippets);
+        if (Array.isArray(d.tabs)) {
+          for (const t of d.tabs) {
+            if (Array.isArray(t.snippets)) walk(t.snippets);
+            if (Array.isArray(t.items)) walk(t.items);
+          }
+        }
+      }
+    };
+    walk(snippets);
+    let totalItems = 0;
+    let totalCents = 0;
+    byProduct.forEach(({ qty, unit }) => {
+      if (qty > 0) {
+        totalItems += qty;
+        totalCents += qty * unit;
+      }
+    });
+    return { totalItems, totalCents };
+  }
+
   function renderDevicePreview(page) {
     const screen = $('device-screen');
     const frame = $('device-frame');
@@ -940,15 +1231,43 @@
       bodyHtml = snippets.map(renderSnippet).join('');
     }
 
-    const totalItems = Object.values(state.cartCounts).reduce((a, b) => a + b, 0);
+    const { totalItems, totalCents } = collectCartSummary(snippets);
     const showCart = Boolean(page.floating_cart);
+    let cartNudgeHtml = '';
+    if (showCart && Number(page.floating_cart.free_delivery_threshold_cents || 0) > 0) {
+      const threshold = Number(page.floating_cart.free_delivery_threshold_cents);
+      const remaining = Math.max(0, threshold - totalCents);
+      const pct = Math.min(100, Math.round((totalCents / threshold) * 100));
+      const unlocked = remaining === 0;
+      const prefix = page.floating_cart.nudge_prefix || 'Add';
+      const unlockedLabel = page.floating_cart.unlocked_label || 'Free delivery unlocked!';
+      const msg = unlocked
+        ? `🎉 ${unlockedLabel}`
+        : `${prefix} $${(remaining / 100).toFixed(2)} more for free delivery`;
+      cartNudgeHtml = `
+        <div class="kmp-cart-nudge ${unlocked ? 'unlocked' : ''}">
+          <div class="kmp-cart-nudge-row">
+            <span>${esc(msg)}</span>
+            <span class="mono">${pct}%</span>
+          </div>
+          <div class="kmp-cart-nudge-track">
+            <div class="kmp-cart-nudge-fill" style="width:${pct}%"></div>
+          </div>
+        </div>`;
+    }
+    const cartLabel = totalItems > 0
+      ? `${totalItems} item${totalItems > 1 ? 's' : ''}${totalCents > 0 ? ` · $${(totalCents / 100).toFixed(2)}` : ''}`
+      : (page.floating_cart?.label || 'Express Cart');
     const cartHtml = showCart ? `
-      <div class="kmp-floating-cart">
-        <div class="kmp-cart-info">
-          <span class="kmp-cart-title">${totalItems > 0 ? `${totalItems} item${totalItems > 1 ? 's' : ''} in cart` : esc(page.floating_cart.label || 'Express Cart')}</span>
-          ${page.floating_cart.eta_badge ? `<span class="kmp-cart-eta">${esc(page.floating_cart.eta_badge.label || textOf(page.floating_cart.eta_badge))}</span>` : ''}
+      <div class="kmp-floating-cart ${cartNudgeHtml ? 'has-nudge' : ''}">
+        ${cartNudgeHtml}
+        <div class="kmp-floating-cart-row">
+          <div class="kmp-cart-info">
+            <span class="kmp-cart-title">${esc(cartLabel)}</span>
+            ${page.floating_cart.eta_badge ? `<span class="kmp-cart-eta">${esc(page.floating_cart.eta_badge.label || textOf(page.floating_cart.eta_badge))}</span>` : ''}
+          </div>
+          <button type="button" class="kmp-cart-cta" data-express-checkout="1">${esc(page.floating_cart.cta?.label || 'Checkout')}</button>
         </div>
-        <button type="button" class="kmp-cart-cta" data-express-checkout="1">${esc(page.floating_cart.cta?.label || 'Checkout')}</button>
       </div>` : '';
 
     const bottomBar = page.bottom_bar?.primary_button ? `
@@ -1343,6 +1662,9 @@
       $('pcf-cart-label').value = l.page_config?.floating_cart?.label || 'Express Cart';
       $('pcf-cart-eta').value = l.page_config?.floating_cart?.eta_badge?.label || '8 min';
       $('pcf-cart-cta').value = l.page_config?.floating_cart?.cta?.label || 'Checkout';
+      if ($('pcf-cart-threshold')) $('pcf-cart-threshold').value = l.page_config?.floating_cart?.free_delivery_threshold_cents || '';
+      if ($('pcf-cart-nudge-prefix')) $('pcf-cart-nudge-prefix').value = l.page_config?.floating_cart?.nudge_prefix || '';
+      if ($('pcf-cart-unlocked')) $('pcf-cart-unlocked').value = l.page_config?.floating_cart?.unlocked_label || '';
       openModal('modal-page-config');
     });
     $('page-config-form')?.addEventListener('submit', (e) => {
@@ -1365,10 +1687,16 @@
         split_pane_enabled: $('pcf-split-pane').checked,
         secondary_snippet_ids: $('pcf-secondary-ids').value.split(',').map((s) => s.trim()).filter(Boolean),
       };
+      const thresholdCents = Number($('pcf-cart-threshold')?.value || 0);
+      const nudgePrefix = $('pcf-cart-nudge-prefix')?.value?.trim() || '';
+      const unlockedLabel = $('pcf-cart-unlocked')?.value?.trim() || '';
       l.page_config.floating_cart = $('pcf-floating-cart-enabled').checked ? {
         label: $('pcf-cart-label').value.trim() || 'Express Cart',
         eta_badge: { label: $('pcf-cart-eta').value.trim() || '8 min' },
         cta: { id: 'cart_checkout', label: $('pcf-cart-cta').value.trim() || 'Checkout' },
+        free_delivery_threshold_cents: thresholdCents > 0 ? thresholdCents : undefined,
+        nudge_prefix: nudgePrefix || undefined,
+        unlocked_label: unlockedLabel || undefined,
       } : undefined;
       closeModal('modal-page-config');
       setDirty(true);
@@ -1767,13 +2095,20 @@
       }
       if (target.dataset.cartInc) {
         const pid = target.dataset.cartInc;
-        state.cartCounts[pid] = (state.cartCounts[pid] || 0) + 1;
+        const base = pid in state.cartCounts ? state.cartCounts[pid] : Number(target.dataset.initQty || 0);
+        state.cartCounts[pid] = base + 1;
         if (state.previewResult?.page) renderDevicePreview(state.previewResult.page);
         return;
       }
       if (target.dataset.cartDec) {
         const pid = target.dataset.cartDec;
-        state.cartCounts[pid] = Math.max(0, (state.cartCounts[pid] || 0) - 1);
+        const base = pid in state.cartCounts ? state.cartCounts[pid] : Number(target.dataset.initQty || 0);
+        state.cartCounts[pid] = Math.max(0, base - 1);
+        if (state.previewResult?.page) renderDevicePreview(state.previewResult.page);
+        return;
+      }
+      if (target.dataset.dismissNudge) {
+        state.dismissedNudges[target.dataset.dismissNudge] = true;
         if (state.previewResult?.page) renderDevicePreview(state.previewResult.page);
         return;
       }

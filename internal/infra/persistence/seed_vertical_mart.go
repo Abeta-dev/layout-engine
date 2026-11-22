@@ -62,7 +62,7 @@ func buildMartWorkspaceSpec(now time.Time) seedWorkspaceSpec {
 			},
 		},
 		ChangeLogID:      "chg_seed_abeta_mart",
-		ChangeLogSummary: "Bootstrapped Abeta Mart marketplace workspace with 2 published layouts and 17 templates",
+		ChangeLogSummary: "Bootstrapped Abeta Mart marketplace workspace with 2 published layouts and 21 templates",
 	}
 }
 

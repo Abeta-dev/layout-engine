@@ -9,7 +9,7 @@
 
 **Abeta Dynamic Layout Engine** (`github.com/abeta-dev/layout-engine`) is an open-source, multi-tenant, rule-driven **Server-Driven UI (SDUI) Layout Engine & Visual Layout Studio** written in **Go 1.26.0** with strict Clean Architecture.
 
-Purpose-built for high-velocity quick-commerce storefronts, food delivery, event ticketing, multi-category marketplaces, swipe discovery, B2B wholesale RFQ flows, and wearable glances, it emits **1:1 wire-compatible `v1` SDUI contracts** directly from [`github.com/abeta-dev/kmp/bff@v0.2.0`](https://github.com/Abeta-dev/kmp) wrapped in [`github.com/abeta-dev/go-libs@v0.4.0`](https://github.com/Abeta-dev/go-libs) envelopes—making it an immediate **drop-in BFF replacement** for **`abeta-dev/kmp`** clients across Android, iOS, macOS, Desktop JVM, WasmJS, watchOS, and Wear OS.
+Purpose-built for high-velocity quick-commerce storefronts, food delivery, event ticketing, multi-category marketplaces, swipe discovery, B2B wholesale RFQ flows, and wearable glances, it emits **1:1 wire-compatible `v1` SDUI contracts** directly from [`github.com/abeta-dev/kmp/bff@v0.3.0`](https://github.com/Abeta-dev/kmp) wrapped in [`github.com/abeta-dev/go-libs@v0.4.0`](https://github.com/Abeta-dev/go-libs) envelopes—making it an immediate **drop-in BFF replacement** for **`abeta-dev/kmp`** clients across Android, iOS, macOS, Desktop JVM, WasmJS, watchOS, and Wear OS.
 
 ---
 
@@ -43,7 +43,7 @@ flowchart TB
     end
 
     subgraph Shared["Shared Abeta Ecosystem Contracts"]
-        KMP_WIRE["github.com/abeta-dev/kmp/bff@v0.2.0\npkg/sdui/{actions,atoms,snippets,theming}\n(15 Atoms · 17 Snippets · 18 Actions · AdaptivePageSpec)"]
+        KMP_WIRE["github.com/abeta-dev/kmp/bff@v0.3.0\npkg/sdui/{actions,atoms,snippets,theming}\n(16 Atoms · 21 Snippets · 18 Actions · Atomic Molding · 7 MotionLoopEffects)"]
         GOLIBS["github.com/abeta-dev/go-libs@v0.4.0\nginmw · apperror · health · logger · env · shutdown"]
     end
 
@@ -68,12 +68,12 @@ cd layout-engine
 go run ./cmd/layout-engine
 ```
 
-On first launch, the engine binds to **`:8090`**, initializes `layout-engine.db` in SQLite WAL mode, applies embedded migrations, and idempotently seeds **6 multi-tenant vertical workspaces**, each equipped with all **17 KMP `v1` widget templates**, curated widgets, targeting & dynamic slotting rules, published `v1` snapshots, guaranteed fallbacks, splash configs, and theme token overrides:
+On first launch, the engine binds to **`:8090`**, initializes `layout-engine.db` in SQLite WAL mode, applies embedded migrations, and idempotently seeds **6 multi-tenant vertical workspaces**, each equipped with all **21 KMP `v1` widget templates**, curated widgets, targeting & dynamic slotting rules, published `v1` snapshots, guaranteed fallbacks, splash configs, and theme token overrides:
 
 | Tenant Slug | Vertical Workspace | Published Dynamic Layouts | Key Showcase Highlights |
 | :--- | :--- | :--- | :--- |
-| **`abeta-fresh`** *(default)* | Abeta Fresh — Quick-Commerce Grocery | `store-home`, `fresh-home`, `flash-sale`, `home`, `catalog`, `form-demo`, `containers`, `watch-status` | 8-min grocery `search_bar` + `chip_group`, responsive `grid`, `FloatingCartSpec` (`/api/v1/fresh/orders/express`), VIP/morning slotting, and Watch glance |
-| **`abeta-bites`** | Abeta Bites — Food Delivery & Dining | `bites-home`, `bites-restaurant`, `bites-order-track` | Dining `search_bar` + `chip_group`, restaurant cards, menu `product_card` grid with `FloatingCartSpec` (`/api/v1/bites/orders`), live rider tracker, Mumbai/VIP dinner slotting |
+| **`abeta-fresh`** *(default)* | Abeta Fresh — Quick-Commerce Grocery | `store-home`, `fresh-home`, `flash-sale`, `home`, `catalog`, `form-demo`, `containers`, `watch-status` | 8-min grocery `marquee_strip` ticker, Flash Drop `nudge_bar` (w/ `CountdownAtom`), molded `composed_block` Loyalty Stamp card, `search_bar` + `chip_group`, responsive `grid`, `FloatingCartSpec` (`$15` free-delivery threshold nudge -> `/api/v1/fresh/orders/express`), VIP/morning slotting, and Watch glance |
+| **`abeta-bites`** | Abeta Bites — Food Delivery & Dining | `bites-home`, `bites-restaurant`, `bites-order-track` | Dining `search_bar` + `chip_group`, restaurant cards, menu `product_card` grid with `FloatingCartSpec` (`/api/v1/bites/orders`), animated 4-step `order_tracker` (`#BTS-4091`), Mumbai/VIP dinner slotting |
 | **`abeta-pulse`** | Abeta Pulse — Events, Movies & Dining Tickets | `pulse-home`, `pulse-event-detail` | Concerts/IMAX/comedy `search_bar` + `chip_group`, spotlight banner, seat-tier booking (`/api/v1/pulse/bookings`), weekend spotlight slotting |
 | **`abeta-mart`** | Abeta Mart — Multi-Category Marketplace | `mart-home`, `mart-product-detail` | Category `search_bar` + `chip_group`, Lightning Deals `carousel`, responsive `grid`, specs `accordion`, VIP lightning deal slotting |
 | **`abeta-spark`** | Abeta Spark — Swipe Discovery & Matches | `spark-deck`, `spark-matches` | City `header_v1`, discovery `chip_group`, 4-profile interactive `swipe_deck` (`/api/v1/spark/swipe` + undo), match `action_row`s, evening boost slotting |
@@ -115,7 +115,7 @@ Starts **`postgres:17-alpine`** + **`abeta-layout-engine`** with healthchecks, a
 | Capability | Details |
 | :--- | :--- |
 | **Multi-Tenant Isolation** | First-class `Tenant` scoping across templates, widgets, layouts, rules, slotting, snapshots, fallbacks, splash configs, token overrides, and audit logs (`?tenant=` or `X-Tenant-ID`, default `abeta-fresh`; 6 pre-seeded vertical workspaces). |
-| **17 KMP `v1` Snippet Templates** | Full coverage of all 17 `abeta-dev/kmp` SnippetTypes: `header_v1`, `banner_v1`, `metric_card`, `card_v1`, `action_row`, `form_v1`, `empty_state`, `divider`, `spacer`, `carousel`, `grid`, `tabs`, `accordion`, `product_card`, `search_bar`, `chip_group`, `swipe_deck`. |
+| **21 KMP `v1` Snippet Templates & Atomic Molding** | Full coverage of all 21 `abeta-dev/kmp` (`bff@v0.3.0`) SnippetTypes: `header_v1`, `banner_v1`, `metric_card`, `card_v1`, `action_row`, `form_v1`, `empty_state`, `divider`, `spacer`, `carousel`, `grid`, `tabs`, `accordion`, `product_card`, `search_bar`, `chip_group`, `swipe_deck`, `nudge_bar`, `marquee_strip`, `order_tracker`, and the **`composed_block`** Atomic Snippet Molding Engine (depth `<= 6`) + `FloatingCartSpec` free-delivery threshold nudges & 7 ambient `MotionLoopEffect`s. |
 | **Deterministic Rule Evaluator** | `all` (AND) / `any` (OR) match modes across 13 operators: `eq`, `neq`, `in`, `not_in`, `gt`, `gte`, `lt`, `lte`, `semver_gte`, `semver_lt`, `contains`, `regex`, and deterministic FNV-1a `bucket_pct` (`%` rollouts). |
 | **UTC Schedule Windows** | Gate rules, layout slots, slotting injections, and splash screens by `start_at`/`end_at` timestamps, `days_of_week` (`0=Sun..6=Sat`), and half-open `start_hour_utc..end_hour_utc` windows (including overnight wrap-around like `22..4`). |
 | **Dynamic Slotting Engine** | Runtime `insert`, `prepend`, `append`, and `replace` widget injections ordered by `priority`, honoring `Pinned` base slots, preventing duplicate widgets, and re-indexing slots sequentially. |

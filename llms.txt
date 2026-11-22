@@ -1,17 +1,17 @@
 # Abeta Dynamic Layout Engine
 
-> Open-source, multi-tenant, rule-driven Server-Driven UI (SDUI) Layout Engine & Visual Layout Studio written in Go 1.26.0 with strict Clean Architecture. Emits 1:1 wire-compatible v1 contracts directly from `github.com/abeta-dev/kmp/bff@v0.2.0` wrapped in `github.com/abeta-dev/go-libs@v0.4.0` envelopes, serving as a drop-in dynamic BFF for `Abeta-dev/kmp` multiplatform apps across Android, iOS, macOS, Desktop JVM, WasmJS, watchOS, and Wear OS.
+> Open-source, multi-tenant, rule-driven Server-Driven UI (SDUI) Layout Engine & Visual Layout Studio written in Go 1.26.0 with strict Clean Architecture. Emits 1:1 wire-compatible v1 contracts directly from `github.com/abeta-dev/kmp/bff@v0.3.0` wrapped in `github.com/abeta-dev/go-libs@v0.4.0` envelopes, serving as a drop-in dynamic BFF for `Abeta-dev/kmp` multiplatform apps across Android, iOS, macOS, Desktop JVM, WasmJS, watchOS, and Wear OS.
 
-Run zero-config on `:8090` with pure-Go SQLite WAL (`go run ./cmd/layout-engine`) or PostgreSQL 17 (`docker compose up --build`). Ships with 6 pre-seeded multi-tenant vertical workspaces, all 17 canonical KMP v1 snippet templates, 13 deterministic targeting operators, UTC schedule windows, dynamic slotting, immutable versioned snapshots with rollback and automatic fallback failover, and a single-binary embedded Visual Layout Studio SPA at `GET /studio`.
+Run zero-config on `:8090` with pure-Go SQLite WAL (`go run ./cmd/layout-engine`) or PostgreSQL 17 (`docker compose up --build`). Ships with 6 pre-seeded multi-tenant vertical workspaces, all 21 canonical KMP v1 snippet templates (including `nudge_bar`, `marquee_strip`, `order_tracker`, and the `composed_block` Atomic Snippet Molding Engine), `FloatingCartSpec` free-delivery threshold nudges, 7 ambient `MotionLoopEffect`s, 13 deterministic targeting operators, UTC schedule windows, dynamic slotting, immutable versioned snapshots with rollback and automatic fallback failover, and a single-binary embedded Visual Layout Studio SPA at `GET /studio`.
 
 When running locally or in production, this index and the full reference are also served live over HTTP at `GET /llms.txt` and `GET /llms-full.txt` (alongside `GET /openapi.json` and `GET /docs`).
 
 ## Documentation
 
 - [Repository Overview](https://raw.githubusercontent.com/Abeta-dev/layout-engine/main/README.md): Quick start, architecture diagram, 6 pre-seeded vertical workspaces, feature matrix, and API summary.
-- [Full LLM Reference](https://raw.githubusercontent.com/Abeta-dev/layout-engine/main/llms-full.txt): Single-file complete engineering reference covering Clean Architecture layers, all 17 KMP v1 snippet types, 13 targeting rule operators, dynamic slotting, context interpolation, snapshot governance, all 6 workspaces, full HTTP API surface, and quickstart commands.
+- [Full LLM Reference](https://raw.githubusercontent.com/Abeta-dev/layout-engine/main/llms-full.txt): Single-file complete engineering reference covering Clean Architecture layers, all 21 KMP v1 snippet types (including the `composed_block` Atomic Snippet Molding Engine), 16 wire atoms, 7 ambient `MotionLoopEffect`s, 13 targeting rule operators, dynamic slotting, context interpolation, snapshot governance, all 6 workspaces, full HTTP API surface, and quickstart commands.
 - [Architecture & Persistence](https://raw.githubusercontent.com/Abeta-dev/layout-engine/main/docs/architecture.md): Uncle Bob Dependency Rule, package responsibilities, 10 domain persistence ports, runtime page resolution pipeline, and dual SQLite / PostgreSQL 17 storage.
-- [Visual Layout Studio, Rules & Slotting](https://raw.githubusercontent.com/Abeta-dev/layout-engine/main/docs/studio-and-rules.md): Studio authoring lifecycle, pre-publish validation, RequestContext extraction, 13 rule operators, UTC schedule windows, dynamic slotting, and curl cookbook.
+- [Visual Layout Studio, Rules & Slotting](https://raw.githubusercontent.com/Abeta-dev/layout-engine/main/docs/studio-and-rules.md): Studio authoring lifecycle, pre-publish validation (21 snippet types + `composed_block` depth `<= 6`), RequestContext extraction, 13 rule operators, UTC schedule windows, dynamic slotting, and curl cookbook.
 - [KMP Client Integration & Wire Protocol](https://raw.githubusercontent.com/Abeta-dev/layout-engine/main/docs/kmp-integration.md): Drop-in `--bff-url` setup for `Abeta-dev/kmp` clients, targeting headers, v1 wire contract parity, Brotli/ETag transport, and Room 3 offline failover synergy.
 
 ## AI Agent Contracts & Skills
@@ -21,5 +21,5 @@ When running locally or in production, this index and the full reference are als
 
 ## Optional
 
-- [Abeta KMP Kit (`Abeta-dev/kmp`)](https://raw.githubusercontent.com/Abeta-dev/kmp/main/llms.txt): Multiplatform Kotlin & Compose SDUI client kit (11 publishable libraries, Room 3 database, 17 snippet renderers, 18 action handlers, wearable companion, and canonical Go `pkg/sdui/*` v1 wire contracts).
+- [Abeta KMP Kit (`Abeta-dev/kmp`)](https://raw.githubusercontent.com/Abeta-dev/kmp/main/llms.txt): Multiplatform Kotlin & Compose SDUI client kit (11 publishable libraries, Room 3 database, 21 snippet renderers including `composed_block` Atomic Snippet Molding Engine, 18 action handlers, wearable companion, and canonical Go `pkg/sdui/*` v1 wire contracts).
 - [Abeta SDUI BFF (`Abeta-dev/sdui-bff`)](https://raw.githubusercontent.com/Abeta-dev/sdui-bff/main/llms.txt): Companion Go SDUI Backend-for-Frontend ecosystem reference sharing the same `v1` wire contracts and `go-libs` envelope middleware.

@@ -11,7 +11,7 @@ import (
 )
 
 // NewDefaultRegistry constructs a Registry pre-populated with transformers for all
-// 17 Abeta KMP v1 SnippetTypes.
+// 21 Abeta KMP v1 SnippetTypes.
 func NewDefaultRegistry() *Registry {
 	reg := NewRegistry()
 
@@ -32,6 +32,10 @@ func NewDefaultRegistry() *Registry {
 	reg.Register(NewWidgetTransformerFunc(snippets.SnippetTypeSwipeDeck, transformSwipeDeck))
 	reg.Register(NewWidgetTransformerFunc(snippets.SnippetTypeSearchBar, transformSearchBar))
 	reg.Register(NewWidgetTransformerFunc(snippets.SnippetTypeChipGroup, transformChipGroup))
+	reg.Register(NewWidgetTransformerFunc(snippets.SnippetTypeNudgeBar, transformNudgeBar))
+	reg.Register(NewWidgetTransformerFunc(snippets.SnippetTypeMarqueeStrip, transformMarqueeStrip))
+	reg.Register(NewWidgetTransformerFunc(snippets.SnippetTypeOrderTracker, transformOrderTracker))
+	reg.Register(NewWidgetTransformerFunc(snippets.SnippetTypeComposedBlock, transformComposedBlock))
 
 	return reg
 }

@@ -9,7 +9,7 @@ import (
 	studioassets "github.com/abeta-dev/layout-engine/internal/handler/studio_assets"
 )
 
-func TestEmbeddedStudioAssets_All17SnippetTypes(t *testing.T) {
+func TestEmbeddedStudioAssets_All21SnippetTypes(t *testing.T) {
 	t.Parallel()
 
 	htmlBytes, err := fs.ReadFile(studioassets.Files, "index.html")
@@ -29,19 +29,23 @@ func TestEmbeddedStudioAssets_All17SnippetTypes(t *testing.T) {
 	js := string(jsBytes)
 	css := string(cssBytes)
 
-	all17 := []string{
+	all21 := []string{
 		snippets.SnippetTypeAccordion,
 		snippets.SnippetTypeActionRow,
 		snippets.SnippetTypeBanner,
 		snippets.SnippetTypeCard,
 		snippets.SnippetTypeCarousel,
 		snippets.SnippetTypeChipGroup,
+		snippets.SnippetTypeComposedBlock,
 		snippets.SnippetTypeDivider,
 		snippets.SnippetTypeEmptyState,
 		snippets.SnippetTypeForm,
 		snippets.SnippetTypeGrid,
 		snippets.SnippetTypeHeader,
+		snippets.SnippetTypeMarqueeStrip,
 		snippets.SnippetTypeMetricCard,
+		snippets.SnippetTypeNudgeBar,
+		snippets.SnippetTypeOrderTracker,
 		snippets.SnippetTypeProductCard,
 		snippets.SnippetTypeSearchBar,
 		snippets.SnippetTypeSpacer,
@@ -49,7 +53,7 @@ func TestEmbeddedStudioAssets_All17SnippetTypes(t *testing.T) {
 		snippets.SnippetTypeTabs,
 	}
 
-	for _, st := range all17 {
+	for _, st := range all21 {
 		if !strings.Contains(html, `value="`+st+`"`) {
 			t.Errorf("index.html missing option value %q", st)
 		}
@@ -58,7 +62,16 @@ func TestEmbeddedStudioAssets_All17SnippetTypes(t *testing.T) {
 		}
 	}
 
-	for _, selector := range []string{".kmp-swipe-deck", ".kmp-search-bar", ".kmp-chip-group"} {
+	for _, selector := range []string{
+		".kmp-swipe-deck",
+		".kmp-search-bar",
+		".kmp-chip-group",
+		".kmp-nudge-bar",
+		".kmp-marquee-strip",
+		".kmp-order-tracker",
+		".kmp-composed-block",
+		".kmp-cart-nudge",
+	} {
 		if !strings.Contains(css, selector) {
 			t.Errorf("app.css missing preview style %q", selector)
 		}

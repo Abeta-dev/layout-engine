@@ -31,15 +31,18 @@ type seedProductSpec struct {
 }
 
 func seedWidgets(tenantID string, now time.Time) []domain.Widget {
-	widgets := make([]domain.Widget, 0, 22)
+	widgets := make([]domain.Widget, 0, 26)
 	widgets = append(widgets,
 		seedHeaderWidget(tenantID, now),
+		seedFreshOfferMarqueeWidget(tenantID, now),
 		seedFreshSearchBarWidget(tenantID, now),
+		seedFreshFlashNudgeWidget(tenantID, now),
 		seedFreshCategoryChipsWidget(tenantID, now),
 		seedHeroBannerWidget(tenantID, now),
 		seedVIPBannerWidget(tenantID, now),
 		seedMorningBannerWidget(tenantID, now),
 		seedETAMetricWidget(tenantID, now),
+		seedFreshLoyaltyComposedWidget(tenantID, now),
 	)
 
 	products := []seedProductSpec{

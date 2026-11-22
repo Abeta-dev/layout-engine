@@ -22,12 +22,16 @@ var supportedSnippetTypeList = []string{
 	snippets.SnippetTypeCard,
 	snippets.SnippetTypeCarousel,
 	snippets.SnippetTypeChipGroup,
+	snippets.SnippetTypeComposedBlock,
 	snippets.SnippetTypeDivider,
 	snippets.SnippetTypeEmptyState,
 	snippets.SnippetTypeForm,
 	snippets.SnippetTypeGrid,
 	snippets.SnippetTypeHeader,
+	snippets.SnippetTypeMarqueeStrip,
 	snippets.SnippetTypeMetricCard,
+	snippets.SnippetTypeNudgeBar,
+	snippets.SnippetTypeOrderTracker,
 	snippets.SnippetTypeProductCard,
 	snippets.SnippetTypeSearchBar,
 	snippets.SnippetTypeSpacer,
@@ -43,13 +47,13 @@ var supportedSnippetTypeSet = func() map[string]struct{} {
 	return m
 }()
 
-// IsValidSnippetType returns true if t is one of the 17 supported KMP v1 SnippetTypes.
+// IsValidSnippetType returns true if t is one of the 21 supported KMP v1 SnippetTypes.
 func IsValidSnippetType(t string) bool {
 	_, ok := supportedSnippetTypeSet[t]
 	return ok
 }
 
-// SupportedSnippetTypes returns a deterministic, sorted copy of all 17 KMP v1 SnippetTypes.
+// SupportedSnippetTypes returns a deterministic, sorted copy of all 21 KMP v1 SnippetTypes.
 func SupportedSnippetTypes() []string {
 	out := make([]string, len(supportedSnippetTypeList))
 	copy(out, supportedSnippetTypeList)
@@ -234,6 +238,20 @@ func (v *DefaultLayoutValidator) validateWidgetBinding(
 		if rawChips, exists := props["chips"]; exists && rawChips != nil {
 			v.validateChipGroupProp(path+"/props/chips", rawChips, issues)
 		}
+
+	case snippets.SnippetTypeNudgeBar:
+		v.validateNudgeBarProps(path+"/props", props, issues)
+
+	case snippets.SnippetTypeMarqueeStrip:
+		if rawItems, exists := props["items"]; exists && rawItems != nil {
+			v.validateMarqueeItemsProp(path+"/props/items", rawItems, issues)
+		}
+
+	case snippets.SnippetTypeOrderTracker:
+		v.validateOrderTrackerProps(path+"/props", props, issues)
+
+	case snippets.SnippetTypeComposedBlock:
+		v.validateComposedBlockProps(path+"/props", props, issues)
 	}
 }
 

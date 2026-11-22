@@ -87,8 +87,8 @@ func verifySeededVertical(t *testing.T, ctx context.Context, store *SQLStore, ex
 	}
 
 	templates, err := store.ListTemplates(ctx, tenant.ID)
-	if err != nil || len(templates) != 17 {
-		t.Fatalf("[%s] expected 17 templates (all KMP v1 SnippetTypes), got %d (err=%v)", exp.slug, len(templates), err)
+	if err != nil || len(templates) != 21 {
+		t.Fatalf("[%s] expected 21 templates (all KMP v1 SnippetTypes), got %d (err=%v)", exp.slug, len(templates), err)
 	}
 
 	widgets, err := store.ListWidgets(ctx, tenant.ID)
@@ -170,6 +170,55 @@ func verifyFreshAndVerticalSpecifics(t *testing.T, ctx context.Context, store *S
 	freshHomeFB, err := store.GetFallback(ctx, freshTenant.ID, "fresh-home")
 	if err != nil || freshHomeFB.Page.FloatingCart == nil {
 		t.Fatalf("expected fresh-home fallback with floating cart, err=%v", err)
+	}
+	if freshHomeFB.Page.FloatingCart.FreeDeliveryThresholdCents == nil || *freshHomeFB.Page.FloatingCart.FreeDeliveryThresholdCents != 1500 {
+		t.Fatalf("expected fresh-home free_delivery_threshold_cents=1500, got %+v", freshHomeFB.Page.FloatingCart)
+	}
+	var foundMarquee, foundNudgeWithCountdown, foundComposedLoyalty bool
+	for _, env := range freshHomeFB.Page.Snippets {
+		switch env.SnippetType {
+		case snippets.SnippetTypeMarqueeStrip:
+			d, err := snippets.DecodeSnippetData[snippets.MarqueeStripSnippetData](env)
+			if err == nil && len(d.Items) >= 3 {
+				foundMarquee = true
+			}
+		case snippets.SnippetTypeNudgeBar:
+			d, err := snippets.DecodeSnippetData[snippets.NudgeBarSnippetData](env)
+			if err == nil && d.Countdown != nil && d.Countdown.RemainingSeconds > 0 {
+				foundNudgeWithCountdown = true
+			}
+		case snippets.SnippetTypeComposedBlock:
+			d, err := snippets.DecodeSnippetData[snippets.ComposedBlockSnippetData](env)
+			if err == nil && d.RecipeName == "loyalty_stamp_card" && d.Root.Kind == snippets.ComposedNodeCard {
+				foundComposedLoyalty = true
+			}
+		}
+	}
+	if !foundMarquee || !foundNudgeWithCountdown || !foundComposedLoyalty {
+		t.Fatalf("fresh-home missing enriched v0.3.0 widgets: marquee=%v nudge_with_countdown=%v composed_loyalty=%v",
+			foundMarquee, foundNudgeWithCountdown, foundComposedLoyalty)
+	}
+
+	bitesTenant, err := store.GetTenantBySlug(ctx, "abeta-bites")
+	if err != nil {
+		t.Fatalf("get abeta-bites: %v", err)
+	}
+	bitesTrackFB, err := store.GetFallback(ctx, bitesTenant.ID, "bites-order-track")
+	if err != nil {
+		t.Fatalf("get bites-order-track fallback: %v", err)
+	}
+	foundOrderTracker := false
+	for _, env := range bitesTrackFB.Page.Snippets {
+		if env.SnippetType == snippets.SnippetTypeOrderTracker {
+			d, err := snippets.DecodeSnippetData[snippets.OrderTrackerSnippetData](env)
+			if err != nil || len(d.Steps) != 4 || d.OrderCode == "" || d.RiderName == "" {
+				t.Fatalf("expected 4-step order_tracker on bites-order-track, got %+v (err=%v)", d, err)
+			}
+			foundOrderTracker = true
+		}
+	}
+	if !foundOrderTracker {
+		t.Fatalf("expected order_tracker snippet on bites-order-track")
 	}
 
 	sparkTenant, err := store.GetTenantBySlug(ctx, "abeta-spark")
@@ -368,6 +417,26 @@ func verifySnippetEnvelopeDecode(t *testing.T, env snippets.SnippetEnvelope) {
 			if card.CardID == "" || card.Title.Text == "" || card.OnLike == nil || card.OnNope == nil || card.OnSuperLike == nil {
 				t.Fatalf("swipe_deck %s card incomplete: %+v", env.SnippetID, card)
 			}
+		}
+	case snippets.SnippetTypeNudgeBar:
+		d, err := snippets.DecodeSnippetData[snippets.NudgeBarSnippetData](env)
+		if err != nil || d.NudgeID == "" || d.Title.Text == "" {
+			t.Fatalf("decode nudge_bar %s: %v (data=%+v)", env.SnippetID, err, d)
+		}
+	case snippets.SnippetTypeMarqueeStrip:
+		d, err := snippets.DecodeSnippetData[snippets.MarqueeStripSnippetData](env)
+		if err != nil || d.StripID == "" || len(d.Items) == 0 {
+			t.Fatalf("decode marquee_strip %s: %v (data=%+v)", env.SnippetID, err, d)
+		}
+	case snippets.SnippetTypeOrderTracker:
+		d, err := snippets.DecodeSnippetData[snippets.OrderTrackerSnippetData](env)
+		if err != nil || d.TrackerID == "" || d.Headline.Text == "" || len(d.Steps) == 0 {
+			t.Fatalf("decode order_tracker %s: %v (data=%+v)", env.SnippetID, err, d)
+		}
+	case snippets.SnippetTypeComposedBlock:
+		d, err := snippets.DecodeSnippetData[snippets.ComposedBlockSnippetData](env)
+		if err != nil || d.BlockID == "" || d.Root.Kind == "" {
+			t.Fatalf("decode composed_block %s: %v (data=%+v)", env.SnippetID, err, d)
 		}
 	}
 }
