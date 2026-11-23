@@ -6,6 +6,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [0.3.0] - 2026-11-23
+
+### Changed
+- **Wire Protocol Upgrade (`github.com/abeta-dev/kmp/bff@v0.5.0`)**:
+  - Upgraded dependency from `kmp/bff@v0.3.0` to `kmp/bff@v0.5.0`, unlocking full parity across all **28 Wire Atoms / 30 UI Atoms**, **21 KMP `v1` `SnippetTypes`**, **29 `ComposedNodeKind`s**, and **18 `ActionTypes`**.
+
+### Added
+- **29 `ComposedNodeKind` Validation & Transformer Parity (`internal/engine`, `pkg/transformer`)**:
+  - Extended `validComposedNodeKinds` in `internal/engine/validator_interactive.go` with all 12 new extended atom node kinds (`radio_group`, `select`, `otp_input`, `chip`, `segmented_control`, `rating`, `price`, `badge`, `alert_banner`, `stat_tile`, `key_value_row`, `qr_code` — 29 total) plus exported `IsValidComposedNodeKind` and `SupportedComposedNodeKinds`.
+  - Updated `pkg/transformer/nudge_transformers.go` (`promoteComposedNodeMap`) to promote shorthand strings and nested fields (`chip.leading_icon`, `alert_banner.icon`, `stat_tile.icon`, `key_value_row.value_color`) across all 29 `ComposedNodeKind`s.
+  - Added full unit test coverage in `internal/engine/validator_nudges_test.go` and `pkg/transformer/nudge_transformers_test.go`.
+- **7th Multi-Tenant Vertical Workspace (`abeta-pay` — `internal/infra/persistence/seed_vertical_pay.go`)**:
+  - Seeded **`abeta-pay`** (`Abeta Pay — Instant Payments & Smart Cards`) with 4 published layouts (`pay-home`, `pay-transfer`, `pay-cards`, `pay-receipt`), Abeta Metal VIP targeting & slotting rules, dual splash/token presets, `#PAY-3081` 4-step live settlement `order_tracker`, and molded `composed_block` widgets showcasing all 12 new extended atoms (`QrCode`, `OtpInput`, `RadioGroup`, `SegmentedControl`, `StatTile`, `KeyValueRow`, `AlertBanner`, `Badge`, `Price`, `Rating`, `Select`, `Chip`).
+  - Enriched `tmpl_composed_block` schema metadata in `seed_templates.go` with `max_depth: 6` and all 29 `composed_node_kinds`.
+- **Visual Layout Studio & OpenAPI 3.1 Upgrades (`internal/handler`)**:
+  - Added full interactive live-preview rendering and styling in `studio_assets/{app.js,index.html,app.css}` for all 12 new `ComposedNodeKind`s (including deterministic inline SVG QR codes, OTP PIN boxes, star ratings, semantic alert banners/badges, KPI stat tiles, key-value receipt rows, segmented controls, radio groups, selects, chips, prices, plus `form_v1` switches/sliders).
+  - Added the **Atomic Snippet Molder** node-kind picker (`#wf-composed-molder-bar`, all 29 `ComposedNodeKind`s) inside the Studio Widget Editor modal.
+  - Updated `/openapi.json`, `README.md`, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `llms.txt`, `llms-full.txt`, and `docs/*.md` for `v0.3.0`.
+
+## [0.2.0] - 2026-11-22
+
+### Added
+- Upgraded to `github.com/abeta-dev/kmp/bff@v0.3.0` covering all **21 KMP `v1` `SnippetTypes`** (adding `nudge_bar`, `marquee_strip`, `order_tracker`, and the `composed_block` Atomic Snippet Molding Engine with `maxDepth <= 6`), `FloatingCartSpec` free-delivery threshold nudges, and 7 ambient `MotionLoopEffect`s.
+- Seeded 6 multi-tenant vertical workspaces (`abeta-fresh`, `abeta-bites`, `abeta-pulse`, `abeta-mart`, `abeta-spark`, `abeta-trade`) and added `/llms.txt` & `/llms-full.txt` endpoints.
+
 ## [0.1.0] - 2026-11-21
 
 ### Added

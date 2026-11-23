@@ -368,13 +368,80 @@ func TestV030SnippetsEndToEndResolutionAndValidation(t *testing.T) {
 		}
 	}
 
-	// 4. Validate both enriched layouts through DefaultLayoutValidator via Studio API.
+	// 4. Verify 7th tenant abeta-pay resolves live (non-fallback) across pay-home, pay-transfer, pay-cards, and pay-receipt.
+	rec, env = doJSON(t, r, http.MethodGet, "/api/v1/studio/tenants", nil, nil)
+	if rec.Code != http.StatusOK || !env.Success {
+		t.Fatalf("GET /api/v1/studio/tenants failed: code=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var tenantsResp struct {
+		Tenants []domain.Tenant `json:"tenants"`
+	}
+	if err := json.Unmarshal(env.Data, &tenantsResp); err != nil || len(tenantsResp.Tenants) != 7 {
+		t.Fatalf("expected 7 seeded tenants, got %d (err=%v)", len(tenantsResp.Tenants), err)
+	}
+
+	rec, env = doJSON(t, r, http.MethodGet, "/api/v1/pages/pay-home?tenant=abeta-pay&city=Bengaluru&segment=vip&include_trace=true", nil, nil)
+	if rec.Code != http.StatusOK || !env.Success {
+		t.Fatalf("GET abeta-pay/pay-home failed: code=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var payHomeRes domain.ResolvedPageResult
+	if err := json.Unmarshal(env.Data, &payHomeRes); err != nil {
+		t.Fatalf("decode pay-home: %v", err)
+	}
+	if payHomeRes.Trace.UsedFallback {
+		t.Fatalf("expected pay-home to resolve from live snapshot, got fallback: %+v", payHomeRes.Trace)
+	}
+	if len(payHomeRes.Trace.AppliedSlottingIDs) == 0 {
+		t.Fatalf("expected Abeta Metal VIP slotting rule to apply on pay-home, got trace=%+v", payHomeRes.Trace)
+	}
+	rawPayHome, _ := json.Marshal(payHomeRes.Page)
+	for _, needle := range []string{`"composed_block"`, `"alert_banner"`, `"stat_tile"`, `"badge"`, `"chip"`, `"rating"`, `"price"`, `"qr_code"`, `"key_value_row"`, `Bengaluru`} {
+		if !strings.Contains(string(rawPayHome), needle) {
+			t.Errorf("abeta-pay/pay-home payload missing %s", needle)
+		}
+	}
+
+	rec, env = doJSON(t, r, http.MethodGet, "/api/v1/pages/pay-transfer?tenant=abeta-pay&city=Mumbai&include_trace=true", nil, nil)
+	if rec.Code != http.StatusOK || !env.Success {
+		t.Fatalf("GET abeta-pay/pay-transfer failed: code=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var payTxRes domain.ResolvedPageResult
+	if err := json.Unmarshal(env.Data, &payTxRes); err != nil || payTxRes.Trace.UsedFallback {
+		t.Fatalf("expected pay-transfer live resolution, got err=%v trace=%+v", err, payTxRes.Trace)
+	}
+	rawPayTx, _ := json.Marshal(payTxRes.Page)
+	for _, needle := range []string{`"segmented_control"`, `"radio_group"`, `"select"`, `"otp_input"`, `"biometric_auth"`} {
+		if !strings.Contains(string(rawPayTx), needle) {
+			t.Errorf("abeta-pay/pay-transfer payload missing %s", needle)
+		}
+	}
+
+	rec, env = doJSON(t, r, http.MethodGet, "/api/v1/pages/pay-receipt?tenant=abeta-pay&include_trace=true", nil, nil)
+	if rec.Code != http.StatusOK || !env.Success {
+		t.Fatalf("GET abeta-pay/pay-receipt failed: code=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var payRcptRes domain.ResolvedPageResult
+	if err := json.Unmarshal(env.Data, &payRcptRes); err != nil || payRcptRes.Trace.UsedFallback {
+		t.Fatalf("expected pay-receipt live resolution, got err=%v trace=%+v", err, payRcptRes.Trace)
+	}
+	rawPayRcpt, _ := json.Marshal(payRcptRes.Page)
+	for _, needle := range []string{`"order_tracker"`, `#PAY-3081`, `"settlement_receipt_ledger"`, `"celebration"`} {
+		if !strings.Contains(string(rawPayRcpt), needle) {
+			t.Errorf("abeta-pay/pay-receipt payload missing %s", needle)
+		}
+	}
+
+	// 5. Validate enriched layouts (including all 4 abeta-pay layouts) through DefaultLayoutValidator via Studio API.
 	for _, tc := range []struct {
 		tenant string
 		slug   string
 	}{
 		{"abeta-fresh", "fresh-home"},
 		{"abeta-bites", "bites-order-track"},
+		{"abeta-pay", "pay-home"},
+		{"abeta-pay", "pay-transfer"},
+		{"abeta-pay", "pay-cards"},
+		{"abeta-pay", "pay-receipt"},
 	} {
 		rec, env = doJSON(t, r, http.MethodPost, "/api/v1/studio/layouts/"+tc.slug+"/validate", nil, map[string]string{
 			"X-Tenant-ID": tc.tenant,

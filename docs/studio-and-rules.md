@@ -9,8 +9,8 @@ This guide explains how product teams and merchandisers author dynamic SDUI scre
 The engine ships with a single-binary embedded Visual Layout Studio SPA served at **`http://localhost:8090/studio`** (embedded via `internal/handler/studio_assets/`—zero separate frontend deployment needed).
 
 From `/studio`, you can:
-1. **Switch Tenants** across all **6 pre-seeded vertical workspaces** (`abeta-fresh`, `abeta-bites`, `abeta-pulse`, `abeta-mart`, `abeta-spark`, `abeta-trade`) or custom workspaces.
-2. **Browse all 21 KMP `v1` Snippet Templates** (`bff@v0.3.0`, including `search_bar`, `chip_group`, `swipe_deck`, `nudge_bar`, `marquee_strip`, `order_tracker`, and the **`composed_block`** Atomic Snippet Molding Engine) and inspect/create reusable **Widgets** with 7 ambient `MotionLoopEffect`s (`pulse`, `shimmer`, `wiggle`, `float`, `heartbeat`, `glow_ring`, `marquee`).
+1. **Switch Tenants** across all **7 pre-seeded vertical workspaces** (`abeta-fresh`, `abeta-bites`, `abeta-pulse`, `abeta-mart`, `abeta-spark`, `abeta-trade`, `abeta-pay`) or custom workspaces.
+2. **Browse all 21 KMP `v1` Snippet Templates** (`bff@v0.5.0`, **28 Wire Atoms / 30 UI Atoms**, including `search_bar`, `chip_group`, `swipe_deck`, `nudge_bar`, `marquee_strip`, `order_tracker`, and the **`composed_block`** Atomic Snippet Molding Engine with all **29 `ComposedNodeKind`s**) and inspect/create reusable **Widgets** using the built-in Studio Molder node-kind picker and 7 ambient `MotionLoopEffect`s (`pulse`, `shimmer`, `wiggle`, `float`, `heartbeat`, `glow_ring`, `marquee`).
 3. **Edit Draft Layouts**: reorder slots, bind targeting rules or UTC schedules per slot, lock critical hero banners with `pinned: true`, and configure page-level chrome (`ToolbarSpec`, `FloatingCartSpec` with free-delivery threshold nudges, `AdaptivePageSpec`, `PaginationSpec`, `PullToRefresh`).
 4. **Simulate Live Contexts**: preview either the active **Published Snapshot** or **Draft** (`POST /api/v1/studio/layouts/:slug/preview`) for any combination of platform, app version, city, zone, user segment, user ID, window class, dark mode, custom attributes, and simulated timestamp (`at`).
 5. **Inspect `ResolutionTrace`**: see exact matched rules, applied slotting rules, skipped slots, fallback usage, and resolution latency in milliseconds.
@@ -43,7 +43,7 @@ Calling `POST /api/v1/studio/layouts/:slug/validate` (and automatically during `
 - Positive integer `columns` on `grid` widgets.
 - Valid inline snippet envelopes (`snippet_id` + supported `snippet_type`) on `carousel`, `grid`, `accordion`, and `tabs`.
 - Non-empty `id` and `title` on every tab entry in `tabs`.
-- Non-empty `title` (and optional `progress` in `0..1`) on `nudge_bar`, non-empty `text` on every `marquee_strip` item, non-empty `headline` and valid `steps` on `order_tracker`, and a valid `root` tree on **`composed_block`** using the 17 canonical `ComposedNodeKind`s (`column`, `row`, `box`, `card`, `flow_row`, `text`, `button`, `tag`, `icon`, `image`, `avatar`, `progress`, `divider`, `spacer`, `stepper`, `countdown`, `rolling_counter`) with enforced **`maxDepth <= 6`** (`max_depth_exceeded`).
+- Non-empty `title` (and optional `progress` in `0..1`) on `nudge_bar`, non-empty `text` on every `marquee_strip` item, non-empty `headline` and valid `steps` on `order_tracker`, and a valid `root` tree on **`composed_block`** using all **29 canonical `ComposedNodeKind`s** (`column`, `row`, `box`, `card`, `flow_row`, `text`, `button`, `tag`, `icon`, `image`, `avatar`, `progress`, `divider`, `spacer`, `stepper`, `countdown`, `rolling_counter`, `radio_group`, `select`, `otp_input`, `chip`, `segmented_control`, `rating`, `price`, `badge`, `alert_banner`, `stat_tile`, `key_value_row`, `qr_code`) with enforced **`maxDepth <= 6`** (`max_depth_exceeded`).
 - Recursive **cycle detection (`cycle_detected`)** across `child_widget_ids` / `widget_ids` container references.
 
 ---
@@ -122,9 +122,9 @@ Dynamic `SlottingRule` entries modify a published layout's base slot list at run
 
 ---
 
-## 6. Pre-Seeded Multi-Tenant Vertical Workspaces (6 Tenants · 21 SnippetTypes)
+## 6. Pre-Seeded Multi-Tenant Vertical Workspaces (7 Tenants · 21 SnippetTypes · 29 ComposedNodeKinds)
 
-On zero-config boot (`go run ./cmd/layout-engine`), `SeedDefaultData` idempotently populates **6 multi-tenant vertical workspaces**, each equipped with all **21 canonical KMP `v1` widget templates** (`header_v1`, `banner_v1`, `metric_card`, `card_v1`, `action_row`, `form_v1`, `empty_state`, `divider`, `spacer`, `carousel`, `grid`, `tabs`, `accordion`, `product_card`, `search_bar`, `chip_group`, `swipe_deck`, `nudge_bar`, `marquee_strip`, `order_tracker`, `composed_block`), curated widgets, targeting rules, dynamic slotting rules, immutable `v1` snapshots, guaranteed fallbacks, splash configs, and branded token overrides:
+On zero-config boot (`go run ./cmd/layout-engine`), `SeedDefaultData` idempotently populates **7 multi-tenant vertical workspaces**, each equipped with all **21 canonical KMP `v1` widget templates** (`header_v1`, `banner_v1`, `metric_card`, `card_v1`, `action_row`, `form_v1`, `empty_state`, `divider`, `spacer`, `carousel`, `grid`, `tabs`, `accordion`, `product_card`, `search_bar`, `chip_group`, `swipe_deck`, `nudge_bar`, `marquee_strip`, `order_tracker`, `composed_block`), curated widgets, targeting rules, dynamic slotting rules, immutable `v1` snapshots, guaranteed fallbacks, splash configs, and branded token overrides:
 
 | Tenant Slug | Workspace Name | Published Layouts | Rules & Slotting Highlights |
 | :--- | :--- | :--- | :--- |
@@ -134,6 +134,7 @@ On zero-config boot (`go run ./cmd/layout-engine`), `SeedDefaultData` idempotent
 | **`abeta-mart`** | Abeta Mart — Multi-Category Marketplace | `mart-home`, `mart-product-detail` | `mart_vip_segment` VIP lightning deal slotting on `mart-home`; Lightning Deals `carousel`, responsive `grid`, and product specs `accordion` |
 | **`abeta-spark`** | Abeta Spark — Swipe Discovery & Matches | `spark-deck`, `spark-matches` | `evening_boost_window` slotting on `spark-deck`; 4-profile `swipe_deck` (`POST /api/v1/spark/swipe` + undo) and match `action_row` widgets |
 | **`abeta-trade`** | Abeta Trade — B2B Wholesale & RFQ Sourcing | `trade-home`, `trade-supplier` | `enterprise_buyers` (`segment in ["enterprise", "vip"]`) procurement desk slotting on `trade-home`; MOQ supplier cards and validated RFQ `form_v1` (`POST /api/v1/trade/rfq`) |
+| **`abeta-pay`** | Abeta Pay — Instant Payments & Smart Cards | `pay-home`, `pay-transfer`, `pay-cards`, `pay-receipt` | `metal_or_vip` (`segment in ["vip", "metal"]`) & `metro_instant_clearing` rules, Metal Concierge slotting on `pay-home`; molded `composed_block` cards showcasing all 12 extended atoms (`QrCode`, `OtpInput`, `RadioGroup`, `SegmentedControl`, `StatTile`, `KeyValueRow`, `AlertBanner`, `Badge`, `Price`, `Rating`, `Select`, `Chip`); biometric transfer auth, smart card switches/slider, and 4-step `#PAY-3081` settlement `order_tracker` |
 
 Pass `?tenant=<slug>` or `X-Tenant-ID: <slug>` on any Runtime or Studio endpoint to switch workspaces dynamically.
 

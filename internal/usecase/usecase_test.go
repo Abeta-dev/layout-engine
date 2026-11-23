@@ -85,11 +85,14 @@ func TestResolveServiceFallbackAndStudioLifecycle(t *testing.T) {
 	}
 
 	// 3. Verify StudioService tenant + rule + slotting + splash + tokens round-trips.
+	if tenants, err := studioSvc.ListTenants(ctx); err != nil || len(tenants) != 7 {
+		t.Fatalf("expected 7 seeded tenants (incl. abeta-pay), got %d err=%v", len(tenants), err)
+	}
 	if _, err := studioSvc.UpsertTenant(ctx, domain.Tenant{Slug: "abeta-pro", Name: "Abeta Pro"}, "tester"); err != nil {
 		t.Fatalf("upsert tenant: %v", err)
 	}
-	if tenants, err := studioSvc.ListTenants(ctx); err != nil || len(tenants) < 2 {
-		t.Fatalf("expected >= 2 tenants, got %d err=%v", len(tenants), err)
+	if tenants, err := studioSvc.ListTenants(ctx); err != nil || len(tenants) != 8 {
+		t.Fatalf("expected 8 tenants after upsert, got %d err=%v", len(tenants), err)
 	}
 	if _, err := studioSvc.UpsertRule(ctx, usecase.DefaultTenantSlug, domain.TargetingRule{
 		Key:        "test_rule",

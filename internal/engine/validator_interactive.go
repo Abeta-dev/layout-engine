@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"slices"
 	"strings"
 
 	"github.com/abeta-dev/kmp/bff/pkg/sdui/atoms"
@@ -14,23 +15,51 @@ import (
 const maxComposedNodeDepth = 6
 
 var validComposedNodeKinds = map[string]struct{}{
-	snippets.ComposedNodeColumn:         {},
-	snippets.ComposedNodeRow:            {},
-	snippets.ComposedNodeBox:            {},
-	snippets.ComposedNodeCard:           {},
-	snippets.ComposedNodeFlowRow:        {},
-	snippets.ComposedNodeText:           {},
-	snippets.ComposedNodeButton:         {},
-	snippets.ComposedNodeTag:            {},
-	snippets.ComposedNodeIcon:           {},
-	snippets.ComposedNodeImage:          {},
-	snippets.ComposedNodeAvatar:         {},
-	snippets.ComposedNodeProgress:       {},
-	snippets.ComposedNodeDivider:        {},
-	snippets.ComposedNodeSpacer:         {},
-	snippets.ComposedNodeStepper:        {},
-	snippets.ComposedNodeCountdown:      {},
-	snippets.ComposedNodeRollingCounter: {},
+	snippets.ComposedNodeColumn:           {},
+	snippets.ComposedNodeRow:              {},
+	snippets.ComposedNodeBox:              {},
+	snippets.ComposedNodeCard:             {},
+	snippets.ComposedNodeFlowRow:          {},
+	snippets.ComposedNodeText:             {},
+	snippets.ComposedNodeButton:           {},
+	snippets.ComposedNodeTag:              {},
+	snippets.ComposedNodeIcon:             {},
+	snippets.ComposedNodeImage:            {},
+	snippets.ComposedNodeAvatar:           {},
+	snippets.ComposedNodeProgress:         {},
+	snippets.ComposedNodeDivider:          {},
+	snippets.ComposedNodeSpacer:           {},
+	snippets.ComposedNodeStepper:          {},
+	snippets.ComposedNodeCountdown:        {},
+	snippets.ComposedNodeRollingCounter:   {},
+	snippets.ComposedNodeRadioGroup:       {},
+	snippets.ComposedNodeSelect:           {},
+	snippets.ComposedNodeOtpInput:         {},
+	snippets.ComposedNodeChip:             {},
+	snippets.ComposedNodeSegmentedControl: {},
+	snippets.ComposedNodeRating:           {},
+	snippets.ComposedNodePrice:            {},
+	snippets.ComposedNodeBadge:            {},
+	snippets.ComposedNodeAlertBanner:      {},
+	snippets.ComposedNodeStatTile:         {},
+	snippets.ComposedNodeKeyValueRow:      {},
+	snippets.ComposedNodeQrCode:           {},
+}
+
+// IsValidComposedNodeKind returns true if kind is one of the 29 canonical KMP v1 ComposedNodeKinds.
+func IsValidComposedNodeKind(kind string) bool {
+	_, ok := validComposedNodeKinds[strings.TrimSpace(kind)]
+	return ok
+}
+
+// SupportedComposedNodeKinds returns a deterministic, sorted copy of all 29 KMP v1 ComposedNodeKinds.
+func SupportedComposedNodeKinds() []string {
+	out := make([]string, 0, len(validComposedNodeKinds))
+	for k := range validComposedNodeKinds {
+		out = append(out, k)
+	}
+	slices.Sort(out)
+	return out
 }
 
 func (v *DefaultLayoutValidator) validateSwipeCardsProp(

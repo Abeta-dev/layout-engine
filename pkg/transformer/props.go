@@ -215,6 +215,14 @@ func promoteImageFields(props map[string]any, keys ...string) {
 	}
 }
 
+func promoteColorRefFields(props map[string]any, keys ...string) {
+	for _, k := range keys {
+		if s, ok := props[k].(string); ok {
+			props[k] = map[string]any{"token": s}
+		}
+	}
+}
+
 func promoteTagSliceField(props map[string]any, key string) {
 	raw, exists := props[key]
 	if !exists || raw == nil {

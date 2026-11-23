@@ -9,7 +9,7 @@
 
 **Abeta Dynamic Layout Engine** (`github.com/abeta-dev/layout-engine`) is an open-source, multi-tenant, rule-driven **Server-Driven UI (SDUI) Layout Engine & Visual Layout Studio** written in **Go 1.26.0** with strict Clean Architecture.
 
-Purpose-built for high-velocity quick-commerce storefronts, food delivery, event ticketing, multi-category marketplaces, swipe discovery, B2B wholesale RFQ flows, and wearable glances, it emits **1:1 wire-compatible `v1` SDUI contracts** directly from [`github.com/abeta-dev/kmp/bff@v0.3.0`](https://github.com/Abeta-dev/kmp) wrapped in [`github.com/abeta-dev/go-libs@v0.4.0`](https://github.com/Abeta-dev/go-libs) envelopes—making it an immediate **drop-in BFF replacement** for **`abeta-dev/kmp`** clients across Android, iOS, macOS, Desktop JVM, WasmJS, watchOS, and Wear OS.
+Purpose-built for high-velocity quick-commerce storefronts, food delivery, event ticketing, multi-category marketplaces, swipe discovery, B2B wholesale RFQ flows, instant fintech payments & smart cards, and wearable glances, it emits **1:1 wire-compatible `v1` SDUI contracts** directly from [`github.com/abeta-dev/kmp/bff@v0.5.0`](https://github.com/Abeta-dev/kmp) wrapped in [`github.com/abeta-dev/go-libs@v0.4.0`](https://github.com/Abeta-dev/go-libs) envelopes—making it an immediate **drop-in BFF replacement** for **`abeta-dev/kmp`** clients across Android, iOS, macOS, Desktop JVM, WasmJS, watchOS, and Wear OS.
 
 ---
 
@@ -30,7 +30,7 @@ flowchart TB
         USECASE["internal/usecase\nResolveService · StudioService (Draft/Publish/Rollback/Fallback/Diff) · ActionService"]
         ENGINE["internal/engine\nRuleEvaluator (SemVer, FNV-1a % Rollouts, Schedules)\nSlottingEngine · PageComposer · LayoutValidator · DiffEngine"]
         DOMAIN["internal/domain\nPure Entities, RequestContext, ResolutionTrace & Store/Engine Ports\n(Zero HTTP/SQL imports — enforced by arch_test.go)"]
-        INFRA["internal/infra\nDual SQLite (modernc.org/sqlite WAL) & PostgreSQL 17 (pgx) Store\nEmbedded Migrations · 6-Vertical Multi-Tenant Seeder"]
+        INFRA["internal/infra\nDual SQLite (modernc.org/sqlite WAL) & PostgreSQL 17 (pgx) Store\nEmbedded Migrations · 7-Vertical Multi-Tenant Seeder"]
 
         CMD --> HANDLER
         CMD --> USECASE
@@ -43,7 +43,7 @@ flowchart TB
     end
 
     subgraph Shared["Shared Abeta Ecosystem Contracts"]
-        KMP_WIRE["github.com/abeta-dev/kmp/bff@v0.3.0\npkg/sdui/{actions,atoms,snippets,theming}\n(16 Atoms · 21 Snippets · 18 Actions · Atomic Molding · 7 MotionLoopEffects)"]
+        KMP_WIRE["github.com/abeta-dev/kmp/bff@v0.5.0\npkg/sdui/{actions,atoms,snippets,theming}\n(28 Wire Atoms / 30 UI Atoms · 21 Snippets · 29 ComposedNodeKinds · 18 Actions · 7 MotionLoopEffects)"]
         GOLIBS["github.com/abeta-dev/go-libs@v0.4.0\nginmw · apperror · health · logger · env · shutdown"]
     end
 
@@ -68,7 +68,7 @@ cd layout-engine
 go run ./cmd/layout-engine
 ```
 
-On first launch, the engine binds to **`:8090`**, initializes `layout-engine.db` in SQLite WAL mode, applies embedded migrations, and idempotently seeds **6 multi-tenant vertical workspaces**, each equipped with all **21 KMP `v1` widget templates**, curated widgets, targeting & dynamic slotting rules, published `v1` snapshots, guaranteed fallbacks, splash configs, and theme token overrides:
+On first launch, the engine binds to **`:8090`**, initializes `layout-engine.db` in SQLite WAL mode, applies embedded migrations, and idempotently seeds **7 multi-tenant vertical workspaces**, each equipped with all **21 KMP `v1` widget templates** (**28 wire atoms / 30 UI atoms**, **29 `ComposedNodeKind`s**), curated widgets, targeting & dynamic slotting rules, published `v1` snapshots, guaranteed fallbacks, splash configs, and theme token overrides:
 
 | Tenant Slug | Vertical Workspace | Published Dynamic Layouts | Key Showcase Highlights |
 | :--- | :--- | :--- | :--- |
@@ -78,6 +78,7 @@ On first launch, the engine binds to **`:8090`**, initializes `layout-engine.db`
 | **`abeta-mart`** | Abeta Mart — Multi-Category Marketplace | `mart-home`, `mart-product-detail` | Category `search_bar` + `chip_group`, Lightning Deals `carousel`, responsive `grid`, specs `accordion`, VIP lightning deal slotting |
 | **`abeta-spark`** | Abeta Spark — Swipe Discovery & Matches | `spark-deck`, `spark-matches` | City `header_v1`, discovery `chip_group`, 4-profile interactive `swipe_deck` (`/api/v1/spark/swipe` + undo), match `action_row`s, evening boost slotting |
 | **`abeta-trade`** | Abeta Trade — B2B Wholesale & RFQ Sourcing | `trade-home`, `trade-supplier` | GST-verified wholesale `search_bar` + `chip_group`, MOQ supplier cards, validated RFQ `form_v1` (`/api/v1/trade/rfq`), enterprise procurement slotting |
+| **`abeta-pay`** | Abeta Pay — Instant Payments & Smart Cards | `pay-home`, `pay-transfer`, `pay-cards`, `pay-receipt` | Zero-fee P2P wallet, perks `marquee_strip`, 5% cashback `nudge_bar`, molded `composed_block` cards showcasing all 12 extended atoms (`QrCode`, `OtpInput`, `RadioGroup`, `SegmentedControl`, `StatTile`, `KeyValueRow`, `AlertBanner`, `Badge`, `Price`, `Rating`, `Select`, `Chip`), biometric transfer auth, smart card switches/slider, `#PAY-3081` 4-step settlement `order_tracker`, Metal VIP slotting |
 
 ### 2. Explore the Embedded Visual Layout Studio & API Docs
 
@@ -114,8 +115,8 @@ Starts **`postgres:17-alpine`** + **`abeta-layout-engine`** with healthchecks, a
 
 | Capability | Details |
 | :--- | :--- |
-| **Multi-Tenant Isolation** | First-class `Tenant` scoping across templates, widgets, layouts, rules, slotting, snapshots, fallbacks, splash configs, token overrides, and audit logs (`?tenant=` or `X-Tenant-ID`, default `abeta-fresh`; 6 pre-seeded vertical workspaces). |
-| **21 KMP `v1` Snippet Templates & Atomic Molding** | Full coverage of all 21 `abeta-dev/kmp` (`bff@v0.3.0`) SnippetTypes: `header_v1`, `banner_v1`, `metric_card`, `card_v1`, `action_row`, `form_v1`, `empty_state`, `divider`, `spacer`, `carousel`, `grid`, `tabs`, `accordion`, `product_card`, `search_bar`, `chip_group`, `swipe_deck`, `nudge_bar`, `marquee_strip`, `order_tracker`, and the **`composed_block`** Atomic Snippet Molding Engine (depth `<= 6`) + `FloatingCartSpec` free-delivery threshold nudges & 7 ambient `MotionLoopEffect`s. |
+| **Multi-Tenant Isolation** | First-class `Tenant` scoping across templates, widgets, layouts, rules, slotting, snapshots, fallbacks, splash configs, token overrides, and audit logs (`?tenant=` or `X-Tenant-ID`, default `abeta-fresh`; 7 pre-seeded vertical workspaces including `abeta-pay`). |
+| **21 KMP `v1` Snippet Templates & Atomic Molding** | Full coverage of all 21 `abeta-dev/kmp` (`bff@v0.5.0`) SnippetTypes (`header_v1`, `banner_v1`, `metric_card`, `card_v1`, `action_row`, `form_v1`, `empty_state`, `divider`, `spacer`, `carousel`, `grid`, `tabs`, `accordion`, `product_card`, `search_bar`, `chip_group`, `swipe_deck`, `nudge_bar`, `marquee_strip`, `order_tracker`, and **`composed_block`**), **28 Wire Atoms / 30 UI Atoms**, and all **29 `ComposedNodeKind`s** (depth `<= 6`) + `FloatingCartSpec` free-delivery threshold nudges & 7 ambient `MotionLoopEffect`s. |
 | **Deterministic Rule Evaluator** | `all` (AND) / `any` (OR) match modes across 13 operators: `eq`, `neq`, `in`, `not_in`, `gt`, `gte`, `lt`, `lte`, `semver_gte`, `semver_lt`, `contains`, `regex`, and deterministic FNV-1a `bucket_pct` (`%` rollouts). |
 | **UTC Schedule Windows** | Gate rules, layout slots, slotting injections, and splash screens by `start_at`/`end_at` timestamps, `days_of_week` (`0=Sun..6=Sat`), and half-open `start_hour_utc..end_hour_utc` windows (including overnight wrap-around like `22..4`). |
 | **Dynamic Slotting Engine** | Runtime `insert`, `prepend`, `append`, and `replace` widget injections ordered by `priority`, honoring `Pinned` base slots, preventing duplicate widgets, and re-indexing slots sequentially. |
@@ -177,7 +178,7 @@ Starts **`postgres:17-alpine`** + **`abeta-layout-engine`** with healthchecks, a
 ## Verification & Development Commands
 
 ```bash
-make run        # Start on :8090 with zero-config SQLite + 6-vertical starter seed
+make run        # Start on :8090 with zero-config SQLite + 7-vertical starter seed
 make test-race  # Run go test -count=1 -race -cover ./...
 make verify     # Run ./scripts/verify_all.sh (hygiene, gofmt, go vet, race tests, static build)
 make docker-up  # Start PostgreSQL 17 + layout-engine via docker-compose.yaml

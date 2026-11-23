@@ -123,6 +123,7 @@ func promoteComposedNodeMap(nodeMap map[string]any) {
 	promoteTagFields(nodeMap, "tag")
 	promoteIconFields(nodeMap, "icon")
 	promoteImageFields(nodeMap, "image")
+	promoteExtendedComposedNodeAtoms(nodeMap)
 
 	switch children := nodeMap["children"].(type) {
 	case []any:
@@ -135,6 +136,38 @@ func promoteComposedNodeMap(nodeMap map[string]any) {
 		for _, chMap := range children {
 			promoteComposedNodeMap(chMap)
 		}
+	}
+}
+
+func promoteExtendedComposedNodeAtoms(nodeMap map[string]any) {
+	if s, ok := nodeMap["chip"].(string); ok {
+		nodeMap["chip"] = map[string]any{"id": s, "label": s}
+	} else if chipMap, ok := nodeMap["chip"].(map[string]any); ok {
+		promoteIconFields(chipMap, "leading_icon")
+	}
+
+	if s, ok := nodeMap["alert_banner"].(string); ok {
+		nodeMap["alert_banner"] = map[string]any{"title": s}
+	} else if alertMap, ok := nodeMap["alert_banner"].(map[string]any); ok {
+		promoteIconFields(alertMap, "icon")
+	}
+
+	if statMap, ok := nodeMap["stat_tile"].(map[string]any); ok {
+		promoteIconFields(statMap, "icon")
+	}
+
+	if kvMap, ok := nodeMap["key_value_row"].(map[string]any); ok {
+		promoteColorRefFields(kvMap, "value_color")
+	}
+
+	if s, ok := nodeMap["price"].(string); ok {
+		nodeMap["price"] = map[string]any{"amount_text": s}
+	}
+	if s, ok := nodeMap["badge"].(string); ok {
+		nodeMap["badge"] = map[string]any{"label": s}
+	}
+	if s, ok := nodeMap["qr_code"].(string); ok {
+		nodeMap["qr_code"] = map[string]any{"payload": s}
 	}
 }
 

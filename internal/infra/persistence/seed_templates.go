@@ -371,10 +371,42 @@ func seedTemplates(tenantID, idPrefix string, now time.Time) []domain.WidgetTemp
 			key:         "tmpl_composed_block",
 			name:        "Atomic Composed Block (Molding Engine)",
 			snippetType: snippets.SnippetTypeComposedBlock,
-			desc:        "Server-molded recursive atomic tree (depth <= 6) combining layout nodes and wire atoms without client app releases.",
+			desc:        "Server-molded recursive atomic tree (29 ComposedNodeKinds, depth <= 6) combining 5 layout containers and 24 wire atoms (incl. radio_group, select, otp_input, chip, segmented_control, rating, price, badge, alert_banner, stat_tile, key_value_row, qr_code) without client app releases.",
 			props:       sampleComposedEnv.Data,
 			tags:        []string{"composed", "atomic", "molding"},
 		},
+	}
+
+	allComposedNodeKinds := []string{
+		snippets.ComposedNodeColumn,
+		snippets.ComposedNodeRow,
+		snippets.ComposedNodeBox,
+		snippets.ComposedNodeCard,
+		snippets.ComposedNodeFlowRow,
+		snippets.ComposedNodeText,
+		snippets.ComposedNodeButton,
+		snippets.ComposedNodeTag,
+		snippets.ComposedNodeIcon,
+		snippets.ComposedNodeImage,
+		snippets.ComposedNodeAvatar,
+		snippets.ComposedNodeProgress,
+		snippets.ComposedNodeDivider,
+		snippets.ComposedNodeSpacer,
+		snippets.ComposedNodeStepper,
+		snippets.ComposedNodeCountdown,
+		snippets.ComposedNodeRollingCounter,
+		snippets.ComposedNodeRadioGroup,
+		snippets.ComposedNodeSelect,
+		snippets.ComposedNodeOtpInput,
+		snippets.ComposedNodeChip,
+		snippets.ComposedNodeSegmentedControl,
+		snippets.ComposedNodeRating,
+		snippets.ComposedNodePrice,
+		snippets.ComposedNodeBadge,
+		snippets.ComposedNodeAlertBanner,
+		snippets.ComposedNodeStatTile,
+		snippets.ComposedNodeKeyValueRow,
+		snippets.ComposedNodeQrCode,
 	}
 
 	out := make([]domain.WidgetTemplate, 0, len(specs))
@@ -382,6 +414,14 @@ func seedTemplates(tenantID, idPrefix string, now time.Time) []domain.WidgetTemp
 		id := sp.key
 		if idPrefix != "" {
 			id = idPrefix + "_" + sp.key
+		}
+		schema := map[string]any{
+			"snippet_type": sp.snippetType,
+			"wire_version": "v1",
+		}
+		if sp.snippetType == snippets.SnippetTypeComposedBlock {
+			schema["max_depth"] = 6
+			schema["composed_node_kinds"] = allComposedNodeKinds
 		}
 		out = append(out, domain.WidgetTemplate{
 			ID:           id,
@@ -391,13 +431,10 @@ func seedTemplates(tenantID, idPrefix string, now time.Time) []domain.WidgetTemp
 			SnippetType:  sp.snippetType,
 			Description:  sp.desc,
 			DefaultProps: structToMap(sp.props),
-			Schema: map[string]any{
-				"snippet_type": sp.snippetType,
-				"wire_version": "v1",
-			},
-			Tags:      sp.tags,
-			CreatedAt: now,
-			UpdatedAt: now,
+			Schema:       schema,
+			Tags:         sp.tags,
+			CreatedAt:    now,
+			UpdatedAt:    now,
 		})
 	}
 	return out

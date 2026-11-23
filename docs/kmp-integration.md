@@ -1,6 +1,6 @@
 # `abeta-dev/kmp` Client Integration & Wire Protocol Guide
 
-**Abeta Dynamic Layout Engine** consumes [`github.com/abeta-dev/kmp/bff@v0.1.0`](https://github.com/Abeta-dev/kmp) (`pkg/sdui/{actions,atoms,snippets,theming}`) and [`github.com/abeta-dev/go-libs@v0.4.0`](https://github.com/Abeta-dev/go-libs) (`ginmw.Envelope`) directly. Because both repositories share the exact same Go `v1` wire contracts, any **`abeta-dev/kmp`** client can switch from the static sample BFF to the Dynamic Layout Engine by changing a single base URL.
+**Abeta Dynamic Layout Engine (`v0.3.0`)** consumes [`github.com/abeta-dev/kmp/bff@v0.5.0`](https://github.com/Abeta-dev/kmp) (`pkg/sdui/{actions,atoms,snippets,theming}`) and [`github.com/abeta-dev/go-libs@v0.4.0`](https://github.com/Abeta-dev/go-libs) (`ginmw.Envelope`) directly. Because both repositories share the exact same Go `v1` wire contracts, any **`abeta-dev/kmp`** client can switch from the static sample BFF to the Dynamic Layout Engine by changing a single base URL.
 
 ---
 
@@ -23,7 +23,7 @@ From your `abeta-dev/kmp` checkout:
 
 ### Point `kmp/storybook` (`LiveBffStory`) at the Layout Engine
 
-In `kmp/storybook` (Desktop JVM, macOS Cocoa, iOS `AbetaStorybookKit`, or WasmJS), open the **Live BFF** story and set the base URL to `http://localhost:8090`. Select `store-home`, `flash-sale`, `home`, `catalog`, or `watch-status` to render live dynamic layouts edited in `/studio`.
+In `kmp/storybook` (Desktop JVM, macOS Cocoa, iOS `AbetaStorybookKit`, or WasmJS), open the **Live BFF** story and set the base URL to `http://localhost:8090`. Select screens across all **7 vertical workspaces** (`store-home`, `fresh-home`, `bites-home`, `pulse-home`, `mart-home`, `spark-deck`, `trade-home`, `pay-home`, `pay-transfer`, `pay-cards`, `pay-receipt`, `watch-status`) to render live dynamic layouts edited in `/studio`.
 
 ### Point `kmp/watch-companion` (`AbetaWatchKit` / Wear OS) at the Layout Engine
 
@@ -33,12 +33,12 @@ In `kmp/storybook` (Desktop JVM, macOS Cocoa, iOS `AbetaStorybookKit`, or WasmJS
 
 ## 2. 1:1 `v1` SDUI Wire Contract Parity
 
-| Contract Surface | Source Package (`github.com/abeta-dev/kmp/bff@v0.1.0`) | Supported Elements |
+| Contract Surface | Source Package (`github.com/abeta-dev/kmp/bff@v0.5.0`) | Supported Elements |
 | :--- | :--- | :--- |
-| **14 Snippet Types** | `pkg/sdui/snippets` | `header_v1`, `banner_v1`, `metric_card`, `card_v1`, `action_row`, `form_v1`, `empty_state`, `divider`, `spacer`, `carousel`, `grid`, `tabs`, `accordion`, `product_card` |
-| **15 Wire Atoms** | `pkg/sdui/atoms` | Text, Icon, Tag, Button, Image, TextField, Divider, Spacer, Progress, Switch, Checkbox, Slider, Avatar, Skeleton, Stepper (`StepperAtom`) + `MotionSpec`, `LayoutConfig`, `TrackingMeta` |
+| **21 Snippet Types** | `pkg/sdui/snippets` | `header_v1`, `banner_v1`, `metric_card`, `card_v1`, `action_row`, `form_v1`, `empty_state`, `divider`, `spacer`, `carousel`, `grid`, `tabs`, `accordion`, `product_card`, `search_bar`, `chip_group`, `swipe_deck`, `nudge_bar`, `marquee_strip`, `order_tracker`, `composed_block` (29 `ComposedNodeKind`s, `maxDepth <= 6`) |
+| **28 Wire Atoms / 30 UI Atoms** | `pkg/sdui/atoms` | Text, Icon, Tag, Button, Image, TextField, Divider, Spacer, Progress, Switch, Checkbox, Slider, Avatar, Skeleton, Stepper (`StepperAtom`), Countdown (`CountdownAtom`), plus 12 extended atoms (`RadioGroup`, `Select`, `OtpInput`, `Chip`, `SegmentedControl`, `Rating`, `Price`, `Badge`, `AlertBanner`, `StatTile`, `KeyValueRow`, `QrCode`) + `MotionSpec` (7 ambient `MotionLoopEffect`s), `LayoutConfig`, `TrackingMeta` |
 | **18 Action Types** | `pkg/sdui/actions` | `navigate`, `back_press`, `open_dialog`, `dismiss_overlay`, `show_toast`, `call_api`, `save_state`, `delete_state`, `track_event`, `refresh_page`, `copy_to_clipboard`, `update_snippets`, `batch`, `trigger_feedback`, `open_url`, `share`, `request_permission`, `biometric_auth` |
-| **Page Chrome & Adaptive Specs** | `pkg/sdui/snippets` | `ToolbarSpec`, `BottomBarSpec`, `FloatingCartSpec`, `AdaptivePageSpec` (`single_column`, `centered`, `split_pane`), `ResponsiveColumnsSpec`, `ResponsiveIntSpec`, `PaginationSpec`, `PullToRefresh`, `PageActions` |
+| **Page Chrome & Adaptive Specs** | `pkg/sdui/snippets` | `ToolbarSpec`, `BottomBarSpec`, `FloatingCartSpec` (incl. free-delivery threshold nudge fields), `AdaptivePageSpec` (`single_column`, `centered`, `split_pane`), `ResponsiveColumnsSpec`, `ResponsiveIntSpec`, `PaginationSpec`, `PullToRefresh`, `PageActions` |
 | **Design Token Catalog** | `pkg/sdui/theming` | Base token catalog merged dynamically with rule-matched `TokenOverride` entries |
 | **Response Envelope** | `github.com/abeta-dev/go-libs/ginmw` | Standard `ginmw.Envelope` (`success`, `data`, `error`, `meta.request_id`) across all `/api/v1/*` routes |
 

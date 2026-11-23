@@ -44,6 +44,25 @@ func TestLayoutValidator_NudgesAndComposedSnippets_Valid(t *testing.T) {
 		map[string]any{"kind": snippets.ComposedNodeStepper},
 		map[string]any{"kind": snippets.ComposedNodeCountdown},
 		map[string]any{"kind": snippets.ComposedNodeRollingCounter},
+		map[string]any{"kind": snippets.ComposedNodeRadioGroup},
+		map[string]any{"kind": snippets.ComposedNodeSelect},
+		map[string]any{"kind": snippets.ComposedNodeOtpInput},
+		map[string]any{"kind": snippets.ComposedNodeChip},
+		map[string]any{"kind": snippets.ComposedNodeSegmentedControl},
+		map[string]any{"kind": snippets.ComposedNodeRating},
+		map[string]any{"kind": snippets.ComposedNodePrice},
+		map[string]any{"kind": snippets.ComposedNodeBadge},
+		map[string]any{"kind": snippets.ComposedNodeAlertBanner},
+		map[string]any{"kind": snippets.ComposedNodeStatTile},
+		map[string]any{"kind": snippets.ComposedNodeKeyValueRow},
+		map[string]any{"kind": snippets.ComposedNodeQrCode},
+	}
+
+	if gotKinds := engine.SupportedComposedNodeKinds(); len(gotKinds) != 29 {
+		t.Fatalf("expected 29 supported composed node kinds, got %d (%v)", len(gotKinds), gotKinds)
+	}
+	if !engine.IsValidComposedNodeKind(snippets.ComposedNodeQrCode) || engine.IsValidComposedNodeKind("nonexistent_atom") {
+		t.Fatal("IsValidComposedNodeKind returned unexpected results")
 	}
 
 	widgets := map[string]domain.Widget{

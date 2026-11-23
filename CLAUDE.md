@@ -1,6 +1,6 @@
 # CLAUDE.md — Claude Code Instructions for `abeta-dev/layout-engine`
 
-This repository is **Abeta Dynamic Layout Engine (`github.com/abeta-dev/layout-engine`)**, a standalone Go `1.26.0` Clean Architecture Server-Driven UI (SDUI) Layout Engine & Visual Layout Studio consuming `github.com/abeta-dev/kmp/bff@v0.1.0` and `github.com/abeta-dev/go-libs@v0.4.0`.
+This repository is **Abeta Dynamic Layout Engine (`github.com/abeta-dev/layout-engine`, `v0.3.0`)**, a standalone Go `1.26.0` Clean Architecture Server-Driven UI (SDUI) Layout Engine & Visual Layout Studio consuming `github.com/abeta-dev/kmp/bff@v0.5.0` (28 Wire Atoms / 30 UI Atoms, 21 SnippetTypes, 29 `ComposedNodeKind`s, 18 ActionTypes) and `github.com/abeta-dev/go-libs@v0.4.0`.
 
 Read [AGENTS.md](AGENTS.md) for the complete architectural contract. Below is the operational quick reference for every session.
 
@@ -18,12 +18,12 @@ Before editing code, load:
 ## Architecture & Invariants
 
 - **Clean Architecture Boundaries**:
-  - `cmd/layout-engine`: Entrypoint, env config (`go-libs/env`), auto-migration, `abeta-fresh` starter seed, HTTP/1.1 + `h2c` + TLS HTTP/2 server, graceful shutdown (`go-libs/shutdown`).
+  - `cmd/layout-engine`: Entrypoint, env config (`go-libs/env`), auto-migration, 7-vertical starter seed (`abeta-fresh`, `abeta-bites`, `abeta-pulse`, `abeta-mart`, `abeta-spark`, `abeta-trade`, `abeta-pay`), HTTP/1.1 + `h2c` + TLS HTTP/2 server, graceful shutdown (`go-libs/shutdown`).
   - `internal/domain`: Pure entities (`Tenant`, `WidgetTemplate`, `Widget`, `TargetingRule`, `ScheduleWindow`, `Layout`, `LayoutSlot`, `SlottingRule`, `PublishedSnapshot`, `FallbackLayout`, `SplashConfig`, `TokenOverride`, `ChangeLogEntry`, `RequestContext`, `ResolutionTrace`) and ports (`Store`, `RuleEvaluator`, `SlottingEngine`, `PageComposer`, `LayoutValidator`). Zero HTTP/Gin/SQL imports (`arch_test.go`).
-  - `internal/engine`: Pure Go rule evaluation (semver, `%` rollouts, `all`/`any`), schedule windows, dynamic slotting (`insert`/`prepend`/`append`/`replace`), v1 KMP page composition, and pre-publish validation.
+  - `internal/engine`: Pure Go rule evaluation (semver, `%` rollouts, `all`/`any`), schedule windows, dynamic slotting (`insert`/`prepend`/`append`/`replace`), and pre-publish validation (21 snippet types, 29 `ComposedNodeKind`s with `maxDepth <= 6`, container cycle detection).
   - `internal/usecase`: `ResolveService`, `StudioService`, `ActionService`.
-  - `internal/handler`: Gin router, embedded Visual Studio SPA (`GET /studio`), OpenAPI 3.1 (`GET /openapi.json`) & Scalar UI (`GET /docs`), runtime KMP-compatible SDUI API, Studio authoring API, compression (`br`/`gzip`), SHA-256 `ETag`.
-  - `internal/infra`: Dual SQLite (`modernc.org/sqlite`) + PostgreSQL (`pgx`) `Store`, migrations (`migrations/{sqlite,postgres}`), and starter seeder (`abeta-fresh`).
+  - `internal/handler`: Gin router, embedded Visual Studio SPA (`GET /studio` with all 21 snippet renderers & 29 `ComposedNodeKind` Atomic Snippet Molder), OpenAPI 3.1 (`GET /openapi.json`) & Scalar UI (`GET /docs`), `/llms.txt` & `/llms-full.txt`, runtime KMP-compatible SDUI API, Studio authoring API, compression (`br`/`gzip`), SHA-256 `ETag`.
+  - `internal/infra`: Dual SQLite (`modernc.org/sqlite`) + PostgreSQL (`pgx`) `Store`, migrations (`migrations/{sqlite,postgres}`), and 7-vertical starter seeder (`abeta-fresh`, `abeta-bites`, `abeta-pulse`, `abeta-mart`, `abeta-spark`, `abeta-trade`, `abeta-pay`).
 - **Default Runtime**: `PORT=8090`, `DB_DIALECT=sqlite`, `DB_DSN=file:layout-engine.db?_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)`.
 - **Drop-In KMP BFF Compatibility**: `GET /api/v1/screens`, `GET /api/v1/screens/:screenId`, `GET /api/v1/pages/:slug` (`?include_trace=true`), `GET /api/v1/config/splash`, `GET /api/v1/catalog/tokens`, `POST /api/v1/actions/execute`, `POST /api/v1/orders/express`.
 - **Brand & Path Hygiene**: Strictly use `abeta-dev` / `Abeta-dev` and `github.com/abeta-dev/layout-engine`. Never commit legacy brand names or local filesystem paths.

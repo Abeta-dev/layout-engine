@@ -1,6 +1,6 @@
 # Architecture — Abeta Dynamic Layout Engine
 
-**Abeta Dynamic Layout Engine (`github.com/abeta-dev/layout-engine`)** is a Go `1.26.0` Server-Driven UI (SDUI) control plane and runtime page resolver designed around **Clean Architecture**, the **Uncle Bob Dependency Rule**, and **1:1 wire compatibility** with [`abeta-dev/kmp`](https://github.com/Abeta-dev/kmp) (`github.com/abeta-dev/kmp/bff@v0.1.0`) and [`abeta-dev/go-libs`](https://github.com/Abeta-dev/go-libs) (`v0.4.0`).
+**Abeta Dynamic Layout Engine (`github.com/abeta-dev/layout-engine`, `v0.3.0`)** is a Go `1.26.0` Server-Driven UI (SDUI) control plane and runtime page resolver designed around **Clean Architecture**, the **Uncle Bob Dependency Rule**, and **1:1 wire compatibility** with [`abeta-dev/kmp`](https://github.com/Abeta-dev/kmp) (`github.com/abeta-dev/kmp/bff@v0.5.0`) and [`abeta-dev/go-libs`](https://github.com/Abeta-dev/go-libs) (`v0.4.0`).
 
 ---
 
@@ -15,7 +15,7 @@ flowchart LR
     USECASE["internal/usecase\n(ResolveService, StudioService, ActionService)"]
     ENGINE["internal/engine\n(RuleEvaluator, SlottingEngine,\nPageComposer, LayoutValidator, DiffEngine)"]
     DOMAIN["internal/domain\n(Pure Entities, Ports, Errors,\narch_test.go)"]
-    INFRA["internal/infra\n(SQLite + Postgres SQLStore,\nMigrations, abeta-fresh Seeder)"]
+    INFRA["internal/infra\n(SQLite + Postgres SQLStore,\nMigrations, 7-Vertical Seeder)"]
 
     CMD --> HANDLER
     CMD --> USECASE
@@ -44,12 +44,12 @@ flowchart LR
 
 | Package | Responsibility |
 | :--- | :--- |
-| `cmd/layout-engine` | Application entrypoint loading env config via `go-libs/env`, opening SQLite or PostgreSQL, running auto-migrations and idempotent `abeta-fresh` starter seeding, serving HTTP/1.1 + `h2c` + TLS HTTP/2, and coordinating graceful shutdown via `go-libs/shutdown`. |
+| `cmd/layout-engine` | Application entrypoint loading env config via `go-libs/env`, opening SQLite or PostgreSQL, running auto-migrations and idempotent 7-vertical starter seeding (`abeta-fresh`, `abeta-bites`, `abeta-pulse`, `abeta-mart`, `abeta-spark`, `abeta-trade`, `abeta-pay`), serving HTTP/1.1 + `h2c` + TLS HTTP/2, and coordinating graceful shutdown via `go-libs/shutdown`. |
 | `internal/domain` | Pure business models (`Tenant`, `WidgetTemplate`, `Widget`, `TargetingRule`, `ScheduleWindow`, `Layout`, `LayoutSlot`, `LayoutPageConfig`, `SlottingRule`, `PublishedSnapshot`, `FallbackLayout`, `SplashConfig`, `TokenOverride`, `ChangeLogEntry`, `DiffItem`, `RequestContext`, `ResolutionTrace`, `ResolvedPageResult`, `ValidationIssue`), sentinel errors, and all storage/engine interfaces (`Store`, `RuleEvaluator`, `SlottingEngine`, `PageComposer`, `LayoutValidator`). |
-| `internal/engine` | Pure deterministic domain engines: `DefaultRuleEvaluator` (13 operators + UTC `ScheduleWindow`), `DefaultSlottingEngine` (`insert`/`prepend`/`append`/`replace` with priority & pinned-slot protection), `DefaultLayoutValidator` (14 KMP snippet checks + recursive container cycle detection), `PageComposer` (emitting `v1` `snippets.PageResponse`), and JSON `DiffEngine`. |
+| `internal/engine` | Pure deterministic domain engines: `DefaultRuleEvaluator` (13 operators + UTC `ScheduleWindow`), `DefaultSlottingEngine` (`insert`/`prepend`/`append`/`replace` with priority & pinned-slot protection), `DefaultLayoutValidator` (all 21 KMP snippet types, 29 `ComposedNodeKind`s with `maxDepth <= 6`, and recursive container cycle detection), and JSON `DiffEngine`. |
 | `internal/usecase` | Application orchestration: `ResolveService` (published snapshot resolution, Studio draft preview, splash & token resolution, fallback failover), `StudioService` (CRUD, validation, immutable snapshot publishing, historical rollback, fallback promotion, audit diff recording), and `ActionService` (all 18 KMP `v1` action types + express order follow-ups). |
-| `internal/handler` | Gin HTTP delivery layer: runtime KMP-compatible endpoints, Studio authoring/governance API, embedded zero-build Visual Layout Studio SPA (`internal/handler/studio_assets/`), OpenAPI 3.1 + Scalar docs (`/openapi.json`, `/docs`), Brotli/gzip compression, SHA-256 `ETag`/`304`, and `go-libs/ginmw` middlewares. |
-| `internal/infra/persistence` | Unified `SQLStore` implementing `domain.Store` across pure-Go SQLite (`modernc.org/sqlite`) and PostgreSQL (`github.com/jackc/pgx/v5/stdlib`), plus embedded migration runner (`migrations/{sqlite,postgres}`). |
+| `internal/handler` | Gin HTTP delivery layer: runtime KMP-compatible endpoints, Studio authoring/governance API, embedded zero-build Visual Layout Studio SPA (`internal/handler/studio_assets/` with 21 snippet renderers & 29-kind Atomic Snippet Molder), OpenAPI 3.1 + Scalar docs (`/openapi.json`, `/docs`), `/llms.txt` & `/llms-full.txt`, Brotli/gzip compression, SHA-256 `ETag`/`304`, and `go-libs/ginmw` middlewares. |
+| `internal/infra/persistence` | Unified `SQLStore` implementing `domain.Store` across pure-Go SQLite (`modernc.org/sqlite`) and PostgreSQL (`github.com/jackc/pgx/v5/stdlib`), plus embedded migration runner (`migrations/{sqlite,postgres}`) and 7-vertical seeder. |
 
 ---
 
@@ -60,7 +60,7 @@ flowchart LR
 | Port Interface | Core Entity | Purpose |
 | :--- | :--- | :--- |
 | `TenantStore` | `Tenant` | Isolates workspaces per brand/app (`slug`, `active`). Default workspace: `abeta-fresh`. |
-| `TemplateStore` | `WidgetTemplate` | Reusable blueprints mapping 1:1 to all 14 KMP `v1` `SnippetTypes`. |
+| `TemplateStore` | `WidgetTemplate` | Reusable blueprints mapping 1:1 to all 21 KMP `v1` `SnippetTypes` (28 wire atoms, 29 `ComposedNodeKind`s). |
 | `WidgetStore` | `Widget` | Configured reusable UI/commerce/container components with `props`, `tracking`, and `motion`. |
 | `LayoutStore` | `Layout` | Editable draft page definitions holding `LayoutPageConfig` (toolbar, bottom bar, floating cart, adaptive split-pane, pagination, pull-to-refresh) and ordered `[]LayoutSlot`. |
 | `RuleStore` | `TargetingRule` | Reusable targeting predicates (`match_mode`, `conditions`, optional `ScheduleWindow`, `priority`). |
@@ -115,7 +115,7 @@ flowchart TD
 
 - **Schema Parity**: Embedded SQL migrations live under `migrations/sqlite/0001_initial_schema.sql` and `migrations/postgres/0001_initial_schema.sql`.
 - **Chronological Precision**: SQLite stores fixed-width UTC RFC3339Nano timestamps (`2006-01-02T15:04:05.000000000Z`) so lexical ordering matches exact nanosecond chronology.
-- **Starter Seeding**: When `AUTO_MIGRATE=true` and `SEED_STARTER_DATA=true`, first startup idempotently provisions the `abeta-fresh` workspace (14 KMP templates, 16+ widgets, 5 rules, 2 slotting rules, and 5 published pages: `store-home`, `flash-sale`, `home`, `catalog`, `watch-status`).
+- **Starter Seeding**: When `DB_AUTO_MIGRATE=true` and `SEED_DEFAULT_DATA=true`, first startup idempotently provisions all **7 multi-tenant vertical workspaces** (`abeta-fresh`, `abeta-bites`, `abeta-pulse`, `abeta-mart`, `abeta-spark`, `abeta-trade`, `abeta-pay`), each with all 21 canonical KMP `v1` templates, curated widgets, rules, slotting overrides, immutable `v1` snapshots, and hydrated fallbacks.
 
 ---
 

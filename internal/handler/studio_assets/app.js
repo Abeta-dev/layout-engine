@@ -25,6 +25,38 @@
     'tabs',
   ];
 
+  const CANONICAL_COMPOSED_NODE_KINDS = [
+    'column',
+    'row',
+    'box',
+    'card',
+    'flow_row',
+    'text',
+    'button',
+    'tag',
+    'icon',
+    'image',
+    'avatar',
+    'progress',
+    'divider',
+    'spacer',
+    'stepper',
+    'countdown',
+    'rolling_counter',
+    'radio_group',
+    'select',
+    'otp_input',
+    'chip',
+    'segmented_control',
+    'rating',
+    'price',
+    'badge',
+    'alert_banner',
+    'stat_tile',
+    'key_value_row',
+    'qr_code',
+  ];
+
   const state = {
     tenant: 'abeta-fresh',
     tenants: [],
@@ -49,6 +81,8 @@
     searchQueries: {},
     chipSelections: {},
     dismissedNudges: {},
+    composedSelections: {},
+    dismissedAlerts: {},
     dragIndex: null,
     previewTimer: null,
   };
@@ -59,6 +93,8 @@
     state.searchQueries = {};
     state.chipSelections = {};
     state.dismissedNudges = {};
+    state.composedSelections = {};
+    state.dismissedAlerts = {};
   }
 
   const $ = (id) => document.getElementById(id);
@@ -636,6 +672,10 @@
       case 'trending_up': return '↗';
       case 'wb_sunny': return '☀';
       case 'notifications': return '🔔';
+      case 'settings': return '⚙';
+      case 'info': return 'ℹ';
+      case 'person': return '👤';
+      case 'arrow_forward': return '→';
       default: return name ? '•' : '';
     }
   }
@@ -688,6 +728,118 @@
       case 'center': return 'justify-content:center';
       case 'end': return 'justify-content:flex-end';
       default: return '';
+    }
+  }
+
+  function normalizeVariant(v) {
+    switch ((v || '').toLowerCase()) {
+      case 'brand':
+      case 'success':
+      case 'warning':
+      case 'error':
+      case 'info':
+        return v.toLowerCase();
+      default:
+        return 'neutral';
+    }
+  }
+
+  function mapValueColorClass(colorRef) {
+    const token = (typeof colorRef === 'string' ? colorRef : colorRef?.token || '').toLowerCase();
+    if (token.includes('success')) return 'kmp-color-success';
+    if (token.includes('error')) return 'kmp-color-error';
+    if (token.includes('warning')) return 'kmp-color-warning';
+    if (token.includes('brand') || token.includes('accent')) return 'kmp-color-brand';
+    return '';
+  }
+
+  function renderQrSvg(payload, sizeDp) {
+    const dim = Math.max(72, Math.min(148, Number(sizeDp || 120)));
+    const cells = 15;
+    let hash = 2166136261;
+    const str = String(payload || 'abeta://pay');
+    for (let i = 0; i < str.length; i++) {
+      hash ^= str.charCodeAt(i);
+      hash = Math.imul(hash, 16777619) >>> 0;
+    }
+    const isFinder = (r, c) =>
+      (r < 4 && c < 4) || (r < 4 && c >= cells - 4) || (r >= cells - 4 && c < 4);
+    const rects = [];
+    for (let r = 0; r < cells; r++) {
+      for (let c = 0; c < cells; c++) {
+        let on = false;
+        if (isFinder(r, c)) {
+          const lr = r < 4 ? r : r - (cells - 4);
+          const lc = c < 4 ? c : c - (cells - 4);
+          on = lr === 0 || lr === 3 || lc === 0 || lc === 3 || (lr === 1 && lc === 1) || (lr === 2 && lc === 2) || (lr === 1 && lc === 2) || (lr === 2 && lc === 1);
+        } else {
+          const bit = ((hash >>> ((r * 7 + c * 13) % 24)) ^ (r * 31 + c * 17)) & 1;
+          on = bit === 1;
+        }
+        if (on) rects.push(`<rect x="${c + 1}" y="${r + 1}" width="1" height="1" rx="0.15"/>`);
+      }
+    }
+    return `<svg class="kmp-qr-svg" width="${dim}" height="${dim}" viewBox="0 0 ${cells + 2} ${cells + 2}" role="img" aria-label="QR Code">${rects.join('')}</svg>`;
+  }
+
+  function buildComposedNodeTemplate(kind) {
+    switch (kind) {
+      case 'column':
+      case 'row':
+      case 'box':
+      case 'card':
+      case 'flow_row':
+        return { kind, spacing_dp: 8, children: [] };
+      case 'text':
+        return { kind, text: { text: 'Sample Heading' } };
+      case 'button':
+        return { kind, button: { id: 'btn_new', label: 'Continue', variant: 'primary' } };
+      case 'tag':
+        return { kind, tag: { label: 'NEW' } };
+      case 'icon':
+        return { kind, icon: { name: 'verified', size_dp: 20 } };
+      case 'image':
+        return { kind, image: { url: 'https://cdn.abeta.dev/fresh/hero.png', content_description: 'Banner' } };
+      case 'avatar':
+        return { kind, avatar: { initials: 'AB', size_dp: 36 } };
+      case 'progress':
+        return { kind, progress: { kind: 'linear', progress: 0.72, label: '72% complete' } };
+      case 'divider':
+        return { kind, divider: { thickness_dp: 1 } };
+      case 'spacer':
+        return { kind, spacer: { height_dp: 8 } };
+      case 'stepper':
+        return { kind, stepper: { field_id: 'qty_1', label: 'ADD', quantity: 1 } };
+      case 'countdown':
+        return { kind, countdown: { countdown_id: 'cd_1', remaining_seconds: 300, label: 'Ends in' } };
+      case 'rolling_counter':
+        return { kind, counter_value: '$2,480.50' };
+      case 'radio_group':
+        return { kind, radio_group: { field_id: 'funding_source', label: 'Choose Option', selected_id: 'opt_1', options: [{ id: 'opt_1', label: 'Option One', badge: 'BEST' }, { id: 'opt_2', label: 'Option Two' }] } };
+      case 'select':
+        return { kind, select: { field_id: 'currency', label: 'Currency', placeholder: 'Select currency', selected_id: 'usd', options: [{ id: 'usd', label: 'USD ($)' }, { id: 'eur', label: 'EUR (€)' }] } };
+      case 'otp_input':
+        return { kind, otp_input: { field_id: 'pin_code', label: '6-Digit PIN', length: 6, masked: true } };
+      case 'chip':
+        return { kind, chip: { id: 'chip_1', label: 'Instant 0% Fee', selected: true, leading_icon: { name: 'bolt' } } };
+      case 'segmented_control':
+        return { kind, segmented_control: { field_id: 'mode', selected_id: 'instant', options: [{ id: 'instant', label: 'Instant' }, { id: 'scheduled', label: 'Scheduled' }] } };
+      case 'rating':
+        return { kind, rating: { id: 'rt_1', value: 4.9, max_stars: 5, review_count: 1240, label: 'Trust Score' } };
+      case 'price':
+        return { kind, price: { id: 'pr_1', amount_text: '$125.00', original_amount_text: '$127.50', discount_label: 'ZERO FEE' } };
+      case 'badge':
+        return { kind, badge: { id: 'bdg_1', count: 3, max_count: 99, variant: 'brand' } };
+      case 'alert_banner':
+        return { kind, alert_banner: { id: 'al_1', title: 'Instant Clearing Active', message: 'Zero-fee transfers enabled.', variant: 'success', icon: { name: 'verified' } } };
+      case 'stat_tile':
+        return { kind, stat_tile: { id: 'st_1', label: 'Available Balance', value: '$2,480.50', delta_label: '+5.0% APY', delta_positive: true, icon: { name: 'star' } } };
+      case 'key_value_row':
+        return { kind, key_value_row: { id: 'kv_1', label: 'Network Fee', value: '$0.00', emphasized: true, show_divider: true } };
+      case 'qr_code':
+        return { kind, qr_code: { id: 'qr_1', payload: 'abeta://pay/@alex.rivera', label: '@alex.rivera', caption: 'Scan to pay instantly', size_dp: 140 } };
+      default:
+        return { kind };
     }
   }
 
@@ -762,6 +914,194 @@
         return renderCountdownPill(node.countdown);
       case 'rolling_counter':
         return `<span class="kmp-rolling-counter mono ${loopCls}">${esc(node.counter_value || '0')}</span>`;
+
+      case 'radio_group': {
+        const rg = node.radio_group || {};
+        const key = `rg:${rg.field_id || node.node_id || 'rg'}`;
+        const selId = key in state.composedSelections ? state.composedSelections[key] : rg.selected_id;
+        const opts = Array.isArray(rg.options) ? rg.options : [];
+        return `
+          <div class="kmp-radio-group ${loopCls}" style="${weight}">
+            ${rg.label ? `<div class="kmp-atom-label">${esc(rg.label)}</div>` : ''}
+            <div class="kmp-radio-list">
+              ${opts.map((o) => {
+                const active = o.id === selId;
+                return `
+                  <button type="button" class="kmp-radio-opt ${active ? 'selected' : ''}" data-composed-key="${esc(key)}" data-composed-val="${esc(o.id)}">
+                    <span class="kmp-radio-dot ${active ? 'selected' : ''}" aria-hidden="true"></span>
+                    <span class="kmp-radio-copy">
+                      <span class="kmp-radio-title">${esc(o.label || o.id)}</span>
+                      ${o.subtitle ? `<span class="kmp-h-sub">${esc(o.subtitle)}</span>` : ''}
+                    </span>
+                    ${o.badge ? `<span class="kmp-tag">${esc(o.badge)}</span>` : ''}
+                  </button>`;
+              }).join('')}
+            </div>
+          </div>`;
+      }
+
+      case 'select': {
+        const sel = node.select || {};
+        const key = `sel:${sel.field_id || node.node_id || 'sel'}`;
+        const curVal = key in state.composedSelections ? state.composedSelections[key] : (sel.selected_id || '');
+        const opts = Array.isArray(sel.options) ? sel.options : [];
+        return `
+          <div class="kmp-select ${loopCls}" style="${weight}">
+            ${sel.label ? `<div class="kmp-atom-label">${esc(sel.label)}</div>` : ''}
+            <select class="kmp-select-box" data-composed-select="${esc(key)}" aria-label="${esc(sel.label || sel.placeholder || 'Select')}">
+              ${sel.placeholder && !curVal ? `<option value="">${esc(sel.placeholder)}</option>` : ''}
+              ${opts.map((o) => `<option value="${esc(o.id)}" ${o.id === curVal ? 'selected' : ''}>${esc(o.label || o.id)}${o.badge ? ` (${esc(o.badge)})` : ''}</option>`).join('')}
+            </select>
+            ${sel.error_text ? `<div class="kmp-atom-error">${esc(sel.error_text)}</div>` : (sel.helper_text ? `<div class="kmp-h-sub">${esc(sel.helper_text)}</div>` : '')}
+          </div>`;
+      }
+
+      case 'otp_input': {
+        const otp = node.otp_input || {};
+        const len = Math.max(4, Math.min(8, Number(otp.length || 6)));
+        const val = String(otp.initial_value || '');
+        const boxes = [];
+        for (let i = 0; i < len; i++) {
+          const ch = val[i] || '';
+          const display = ch ? (otp.masked ? '•' : ch) : (otp.masked && i < 2 ? '•' : '');
+          boxes.push(`<span class="kmp-otp-cell ${display ? 'filled' : ''}">${esc(display)}</span>`);
+        }
+        return `
+          <div class="kmp-otp-input ${loopCls}" style="${weight}">
+            ${otp.label ? `<div class="kmp-atom-label">${esc(otp.label)}</div>` : ''}
+            <div class="kmp-otp-cells" aria-label="${esc(otp.label || 'OTP')}">${boxes.join('')}</div>
+            ${otp.error_text ? `<div class="kmp-atom-error">${esc(otp.error_text)}</div>` : (otp.helper_text ? `<div class="kmp-h-sub">${esc(otp.helper_text)}</div>` : '')}
+          </div>`;
+      }
+
+      case 'chip': {
+        const ch = node.chip || {};
+        const key = `chip:${ch.id || node.node_id || ch.label || 'c'}`;
+        const active = key in state.composedSelections ? state.composedSelections[key] === '1' : Boolean(ch.selected);
+        const glyph = ch.leading_icon ? previewIconGlyph(ch.leading_icon) : '';
+        return `
+          <button type="button" class="kmp-chip ${active ? 'selected' : ''} ${loopCls}" data-composed-toggle="${esc(key)}" data-composed-cur="${active ? '1' : '0'}">
+            ${glyph ? `<span aria-hidden="true">${esc(glyph)}</span>` : ''}
+            <span>${esc(ch.label || ch.id || 'Chip')}</span>
+            ${ch.removable ? '<span class="kmp-chip-rm" aria-hidden="true">×</span>' : ''}
+          </button>`;
+      }
+
+      case 'segmented_control': {
+        const sc = node.segmented_control || {};
+        const key = `seg:${sc.field_id || node.node_id || 'seg'}`;
+        const selId = key in state.composedSelections ? state.composedSelections[key] : sc.selected_id;
+        const opts = Array.isArray(sc.options) ? sc.options : [];
+        return `
+          <div class="kmp-segmented ${loopCls}" style="${weight}" role="group">
+            ${opts.map((o) => {
+              const active = o.id === selId;
+              return `<button type="button" class="kmp-seg-pill ${active ? 'selected' : ''}" data-composed-key="${esc(key)}" data-composed-val="${esc(o.id)}">${esc(o.label || o.id)}</button>`;
+            }).join('')}
+          </div>`;
+      }
+
+      case 'rating': {
+        const rt = node.rating || {};
+        const maxStars = Math.max(1, Math.min(10, Number(rt.max_stars || 5)));
+        const val = Number(rt.value || 0);
+        const full = Math.round(val);
+        let stars = '';
+        for (let i = 1; i <= maxStars; i++) {
+          stars += `<span class="kmp-star ${i <= full ? 'filled' : ''}">★</span>`;
+        }
+        return `
+          <div class="kmp-rating ${loopCls}">
+            <span class="kmp-rating-stars" aria-label="${val} of ${maxStars} stars">${stars}</span>
+            <span class="kmp-rating-val mono">${val.toFixed(1)}</span>
+            ${rt.review_count != null ? `<span class="kmp-h-sub">(${Number(rt.review_count).toLocaleString()})</span>` : ''}
+            ${rt.label ? `<span class="kmp-h-sub">${esc(rt.label)}</span>` : ''}
+          </div>`;
+      }
+
+      case 'price': {
+        const pr = node.price || {};
+        return `
+          <div class="kmp-price-atom ${loopCls}">
+            <span class="kmp-price-amt ${pr.emphasized === false ? '' : 'emphasized'}">${esc(pr.amount_text || '$0.00')}</span>
+            ${pr.unit_suffix ? `<span class="kmp-h-sub">${esc(pr.unit_suffix)}</span>` : ''}
+            ${pr.original_amount_text ? `<span class="kmp-orig-price">${esc(pr.original_amount_text)}</span>` : ''}
+            ${pr.discount_label ? `<span class="kmp-price-disc">${esc(pr.discount_label)}</span>` : ''}
+          </div>`;
+      }
+
+      case 'badge': {
+        const b = node.badge || {};
+        const variant = normalizeVariant(b.variant);
+        const bLoop = motionLoopClass(b.motion) || loopCls;
+        if (b.dot_only) {
+          return `<span class="kmp-badge-dot kmp-var-${variant} ${bLoop}" aria-label="${esc(b.label || variant)}"></span>`;
+        }
+        let text = b.label || '';
+        if (b.count != null) {
+          const maxC = Number(b.max_count || 99);
+          text = Number(b.count) > maxC ? `${maxC}+` : String(b.count);
+        }
+        return `<span class="kmp-badge-atom kmp-var-${variant} ${bLoop}">${esc(text || '•')}</span>`;
+      }
+
+      case 'alert_banner': {
+        const al = node.alert_banner || {};
+        const alertKey = al.id || node.node_id || al.title || 'alert';
+        if (state.dismissedAlerts[alertKey]) return '';
+        const variant = normalizeVariant(al.variant);
+        const glyph = al.icon ? previewIconGlyph(al.icon) : '';
+        return `
+          <div class="kmp-alert-banner kmp-var-${variant} ${loopCls}" style="${weight}">
+            ${glyph ? `<span class="kmp-alert-icon" aria-hidden="true">${esc(glyph)}</span>` : ''}
+            <div class="kmp-alert-copy">
+              <div class="kmp-alert-title">${esc(al.title || '')}</div>
+              ${al.message ? `<div class="kmp-alert-msg">${esc(al.message)}</div>` : ''}
+            </div>
+            ${al.action_label ? `<button type="button" class="kmp-btn kmp-btn-secondary">${esc(al.action_label)}</button>` : ''}
+            ${al.dismissible ? `<button type="button" class="kmp-nudge-dismiss" data-dismiss-alert="${esc(alertKey)}" aria-label="Dismiss">&times;</button>` : ''}
+          </div>`;
+      }
+
+      case 'stat_tile': {
+        const st = node.stat_tile || {};
+        const glyph = st.icon ? previewIconGlyph(st.icon) : '';
+        const deltaCls = st.delta_positive === false ? 'neg' : 'pos';
+        return `
+          <div class="kmp-stat-tile ${loopCls}" style="${weight}">
+            <div class="kmp-stat-head">
+              <span class="kmp-h-sub">${esc(st.label || '')}</span>
+              ${glyph ? `<span class="kmp-stat-icon" aria-hidden="true">${esc(glyph)}</span>` : ''}
+            </div>
+            <div class="kmp-stat-val">${esc(st.value || '')}</div>
+            ${st.delta_label ? `<span class="kmp-stat-delta ${deltaCls}">${esc(st.delta_label)}</span>` : ''}
+            ${st.caption ? `<div class="kmp-h-sub">${esc(st.caption)}</div>` : ''}
+          </div>`;
+      }
+
+      case 'key_value_row': {
+        const kv = node.key_value_row || {};
+        const valColorCls = mapValueColorClass(kv.value_color);
+        return `
+          <div class="kmp-kv-row ${kv.show_divider ? 'has-divider' : ''} ${loopCls}" style="${weight}">
+            <div class="kmp-kv-left">
+              <span class="kmp-kv-label">${esc(kv.label || '')}</span>
+              ${kv.sublabel ? `<span class="kmp-h-sub">${esc(kv.sublabel)}</span>` : ''}
+            </div>
+            <span class="kmp-kv-val ${kv.emphasized ? 'emphasized' : ''} ${valColorCls}">${esc(kv.value || '')}</span>
+          </div>`;
+      }
+
+      case 'qr_code': {
+        const qr = node.qr_code || {};
+        return `
+          <div class="kmp-qr-code ${loopCls}">
+            <div class="kmp-qr-frame">${renderQrSvg(qr.payload, qr.size_dp)}</div>
+            ${qr.label ? `<div class="kmp-qr-label mono">${esc(qr.label)}</div>` : ''}
+            ${qr.caption ? `<div class="kmp-h-sub">${esc(qr.caption)}</div>` : ''}
+          </div>`;
+      }
+
       default:
         return `<span class="mini-chip">${esc(kind || 'node')}</span>`;
     }
@@ -1122,7 +1462,12 @@
             </div>
             ${d.subtitle ? `<div class="kmp-h-sub">${esc(textOf(d.subtitle))}</div>` : ''}
             ${d.description ? `<div class="kmp-banner-body">${esc(textOf(d.description))}</div>` : ''}
-            ${(d.actions || []).length ? `<div class="kmp-card-actions">${d.actions.map((a) => `<button type="button" class="kmp-btn kmp-btn-primary">${esc(a.label)}</button>`).join('')}</div>` : ''}
+            ${(d.primary_button || d.secondary_button || (d.actions || []).length) ? `
+              <div class="kmp-card-actions">
+                ${d.primary_button ? `<button type="button" class="kmp-btn kmp-btn-primary">${esc(d.primary_button.label || 'Open')}</button>` : ''}
+                ${d.secondary_button ? `<button type="button" class="kmp-btn kmp-btn-secondary">${esc(d.secondary_button.label || 'More')}</button>` : ''}
+                ${(d.actions || []).map((a) => `<button type="button" class="kmp-btn kmp-btn-primary">${esc(a.label)}</button>`).join('')}
+              </div>` : ''}
           </div>`;
 
       case 'action_row':
@@ -1132,14 +1477,39 @@
               <div class="kmp-h-title">${esc(textOf(d.title))}</div>
               ${d.subtitle ? `<div class="kmp-h-sub">${esc(textOf(d.subtitle))}</div>` : ''}
             </div>
-            <span>›</span>
+            <div class="card-row">
+              ${d.trailing_tag ? `<span class="kmp-tag">${esc(d.trailing_tag.label || textOf(d.trailing_tag))}</span>` : ''}
+              <span>›</span>
+            </div>
           </div>`;
 
       case 'form_v1':
         return `
           <div class="kmp-form">
             ${d.title ? `<div class="kmp-h-title">${esc(textOf(d.title))}</div>` : ''}
-            ${(d.fields || []).map((f) => `<input type="text" placeholder="${esc(f.placeholder || f.label || f.field_id)}" />`).join('')}
+            ${d.description ? `<div class="kmp-h-sub">${esc(textOf(d.description))}</div>` : ''}
+            ${(d.fields || []).map((f) => `<input type="text" placeholder="${esc(f.placeholder || f.label || f.field_id)}" value="${esc(f.initial_value || '')}" />`).join('')}
+            ${(d.switches || []).map((sw) => `
+              <label class="kmp-form-switch">
+                <span>
+                  <div class="kmp-kv-label">${esc(sw.label || sw.field_id)}</div>
+                  ${sw.subtitle ? `<div class="kmp-h-sub">${esc(sw.subtitle)}</div>` : ''}
+                </span>
+                <input type="checkbox" ${sw.checked ? 'checked' : ''} />
+              </label>`).join('')}
+            ${(d.checkboxes || []).map((cb) => `
+              <label class="kmp-form-switch">
+                <span class="kmp-kv-label">${esc(cb.label || cb.field_id)}</span>
+                <input type="checkbox" ${cb.checked ? 'checked' : ''} />
+              </label>`).join('')}
+            ${(d.sliders || []).map((sl) => `
+              <div class="kmp-form-slider">
+                <div class="card-row">
+                  <span class="kmp-kv-label">${esc(sl.label || sl.field_id)}</span>
+                  <span class="mono kmp-h-sub">${esc(sl.value ?? sl.min_value ?? 0)} ${esc(sl.unit_label || '')}</span>
+                </div>
+                <input type="range" min="${Number(sl.min_value ?? 0)}" max="${Number(sl.max_value ?? 100)}" value="${Number(sl.value ?? 0)}" />
+              </div>`).join('')}
             ${d.submit_button ? `<button type="button" class="kmp-btn kmp-btn-primary">${esc(d.submit_button.label || 'Submit')}</button>` : ''}
           </div>`;
 
@@ -1704,6 +2074,10 @@
     });
 
     // Widgets filter & modal
+    const syncComposedMolderBar = () => {
+      const bar = $('wf-composed-molder-bar');
+      if (bar) bar.hidden = $('wf-snippet-type')?.value !== 'composed_block';
+    };
     $('widget-search')?.addEventListener('input', renderWidgetsList);
     $('widget-type-filter')?.addEventListener('change', renderWidgetsList);
     $('btn-composer-add-widget')?.addEventListener('click', () => {
@@ -1719,13 +2093,38 @@
       $('wf-props').value = '{\n  "title": { "text": "New Dynamic Banner • {{city}}" }\n}';
       $('wf-motion').value = '';
       $('wf-json-error').hidden = true;
+      syncComposedMolderBar();
       openModal('modal-widget');
     });
+    $('wf-snippet-type')?.addEventListener('change', syncComposedMolderBar);
     $('wf-template')?.addEventListener('change', (e) => {
       const tpl = state.templates.find((t) => t.key === e.target.value);
       if (!tpl) return;
       $('wf-snippet-type').value = tpl.snippet_type;
       $('wf-props').value = JSON.stringify(tpl.default_props || {}, null, 2);
+      syncComposedMolderBar();
+    });
+    $('btn-insert-composed-node')?.addEventListener('click', () => {
+      const kind = $('wf-composed-node-kind')?.value;
+      if (!kind || !CANONICAL_COMPOSED_NODE_KINDS.includes(kind)) return;
+      try {
+        const cur = JSON.parse($('wf-props').value || '{}');
+        if (!cur.root || typeof cur.root !== 'object') {
+          cur.block_id = cur.block_id || 'molded_block';
+          cur.root = { kind: 'card', children: [{ kind: 'column', spacing_dp: 8, children: [] }] };
+        }
+        const target = Array.isArray(cur.root.children) && cur.root.children[0]?.children
+          ? cur.root.children[0]
+          : cur.root;
+        if (!Array.isArray(target.children)) target.children = [];
+        target.children.push(buildComposedNodeTemplate(kind));
+        $('wf-props').value = JSON.stringify(cur, null, 2);
+        $('wf-json-error').hidden = true;
+        toast(`Inserted ${kind} node into composed_block`, 'info');
+      } catch (err) {
+        $('wf-json-error').textContent = `Cannot insert node — fix Props JSON first: ${err.message}`;
+        $('wf-json-error').hidden = false;
+      }
     });
     $('btn-format-widget-json')?.addEventListener('click', () => {
       try {
@@ -1999,6 +2398,7 @@
         $('wf-props').value = JSON.stringify(w.props || {}, null, 2);
         $('wf-motion').value = w.motion ? JSON.stringify(w.motion, null, 2) : '';
         $('wf-json-error').hidden = true;
+        syncComposedMolderBar();
         openModal('modal-widget');
         return;
       }
@@ -2112,6 +2512,22 @@
         if (state.previewResult?.page) renderDevicePreview(state.previewResult.page);
         return;
       }
+      if (target.dataset.dismissAlert) {
+        state.dismissedAlerts[target.dataset.dismissAlert] = true;
+        if (state.previewResult?.page) renderDevicePreview(state.previewResult.page);
+        return;
+      }
+      if (target.dataset.composedKey) {
+        state.composedSelections[target.dataset.composedKey] = target.dataset.composedVal;
+        if (state.previewResult?.page) renderDevicePreview(state.previewResult.page);
+        return;
+      }
+      if (target.dataset.composedToggle) {
+        const key = target.dataset.composedToggle;
+        state.composedSelections[key] = target.dataset.composedCur === '1' ? '0' : '1';
+        if (state.previewResult?.page) renderDevicePreview(state.previewResult.page);
+        return;
+      }
       if (target.dataset.swipeDeck) {
         const deckId = target.dataset.swipeDeck;
         const dir = target.dataset.swipeDir || 'like';
@@ -2187,6 +2603,11 @@
       const wrap = inp.closest('[data-search-wrap]');
       const clearBtn = wrap?.querySelector('[data-search-clear]');
       if (clearBtn) clearBtn.hidden = !inp.value;
+    });
+    document.addEventListener('change', (e) => {
+      const sel = e.target.closest?.('[data-composed-select]');
+      if (!sel) return;
+      state.composedSelections[sel.dataset.composedSelect] = sel.value;
     });
     document.addEventListener('keydown', (e) => {
       const inp = e.target.closest?.('[data-search-input]');

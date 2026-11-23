@@ -71,9 +71,61 @@ func TestEmbeddedStudioAssets_All21SnippetTypes(t *testing.T) {
 		".kmp-order-tracker",
 		".kmp-composed-block",
 		".kmp-cart-nudge",
+		".kmp-radio-group",
+		".kmp-select",
+		".kmp-otp-input",
+		".kmp-chip",
+		".kmp-segmented",
+		".kmp-rating",
+		".kmp-price-atom",
+		".kmp-badge-atom",
+		".kmp-alert-banner",
+		".kmp-stat-tile",
+		".kmp-kv-row",
+		".kmp-qr-code",
 	} {
 		if !strings.Contains(css, selector) {
 			t.Errorf("app.css missing preview style %q", selector)
+		}
+	}
+
+	all29ComposedKinds := []string{
+		snippets.ComposedNodeColumn,
+		snippets.ComposedNodeRow,
+		snippets.ComposedNodeBox,
+		snippets.ComposedNodeCard,
+		snippets.ComposedNodeFlowRow,
+		snippets.ComposedNodeText,
+		snippets.ComposedNodeButton,
+		snippets.ComposedNodeTag,
+		snippets.ComposedNodeIcon,
+		snippets.ComposedNodeImage,
+		snippets.ComposedNodeAvatar,
+		snippets.ComposedNodeProgress,
+		snippets.ComposedNodeDivider,
+		snippets.ComposedNodeSpacer,
+		snippets.ComposedNodeStepper,
+		snippets.ComposedNodeCountdown,
+		snippets.ComposedNodeRollingCounter,
+		snippets.ComposedNodeRadioGroup,
+		snippets.ComposedNodeSelect,
+		snippets.ComposedNodeOtpInput,
+		snippets.ComposedNodeChip,
+		snippets.ComposedNodeSegmentedControl,
+		snippets.ComposedNodeRating,
+		snippets.ComposedNodePrice,
+		snippets.ComposedNodeBadge,
+		snippets.ComposedNodeAlertBanner,
+		snippets.ComposedNodeStatTile,
+		snippets.ComposedNodeKeyValueRow,
+		snippets.ComposedNodeQrCode,
+	}
+	for _, kind := range all29ComposedKinds {
+		if !strings.Contains(html, `value="`+kind+`"`) {
+			t.Errorf("index.html composed molder picker missing node kind %q", kind)
+		}
+		if !strings.Contains(js, `'`+kind+`'`) {
+			t.Errorf("app.js missing composed node kind %q", kind)
 		}
 	}
 }

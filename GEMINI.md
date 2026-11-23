@@ -1,6 +1,6 @@
 # GEMINI.md — Gemini, Antigravity & JetBrains AI Instructions for `abeta-dev/layout-engine`
 
-This repository is **Abeta Dynamic Layout Engine (`github.com/abeta-dev/layout-engine`)**, a standalone open-source Go `1.26.0` Clean Architecture Server-Driven UI (SDUI) Layout Engine & Visual Layout Studio built for `abeta-dev/kmp` (`github.com/abeta-dev/kmp/bff@v0.1.0`) and `github.com/abeta-dev/go-libs@v0.4.0`.
+This repository is **Abeta Dynamic Layout Engine (`github.com/abeta-dev/layout-engine`, `v0.3.0`)**, a standalone open-source Go `1.26.0` Clean Architecture Server-Driven UI (SDUI) Layout Engine & Visual Layout Studio built for `abeta-dev/kmp` (`github.com/abeta-dev/kmp/bff@v0.5.0` — 28 Wire Atoms / 30 UI Atoms, 21 SnippetTypes, 29 `ComposedNodeKind`s, 18 ActionTypes, 7 pre-seeded vertical workspaces including `abeta-pay`) and `github.com/abeta-dev/go-libs@v0.4.0`.
 
 Read [AGENTS.md](AGENTS.md) for the authoritative architectural contract. This file adapts routing for **Gemini CLI**, **Gemini Code Assist**, **Antigravity**, and **JetBrains AI**.
 

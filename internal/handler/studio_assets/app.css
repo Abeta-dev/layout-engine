@@ -2649,6 +2649,379 @@ textarea {
   width: 100%;
 }
 
+/* Extended Wire Atoms (v0.5.0 — 12 new ComposedNodeKinds) */
+.molder-helper-bar {
+  border-color: var(--violet);
+  background: var(--bg-elevated);
+}
+.kmp-atom-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--kmp-text-2);
+  margin-bottom: 3px;
+}
+.kmp-atom-error {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #E11D48;
+  margin-top: 2px;
+}
+.kmp-color-success { color: #059669 !important; }
+.kmp-color-error { color: #E11D48 !important; }
+.kmp-color-warning { color: #D97706 !important; }
+.kmp-color-brand { color: #2563EB !important; }
+
+.kmp-radio-group,
+.kmp-select,
+.kmp-otp-input {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+.kmp-radio-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.kmp-radio-opt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  padding: 7px 9px;
+  border-radius: 9px;
+  border: 1px solid var(--kmp-border);
+  background: var(--kmp-surface-2);
+  color: var(--kmp-text);
+  cursor: pointer;
+}
+.kmp-radio-opt.selected {
+  border-color: #2563EB;
+  background: rgba(37, 99, 235, 0.08);
+}
+.kmp-radio-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--kmp-text-3);
+  flex-shrink: 0;
+}
+.kmp-radio-dot.selected {
+  border-color: #2563EB;
+  box-shadow: inset 0 0 0 3px var(--kmp-surface), inset 0 0 0 6px #2563EB;
+}
+.kmp-radio-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+.kmp-radio-title {
+  font-size: 11.5px;
+  font-weight: 650;
+  color: var(--kmp-text);
+}
+.kmp-select-box {
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--kmp-border);
+  background: var(--kmp-surface-2);
+  color: var(--kmp-text);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+.kmp-otp-cells {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.kmp-otp-cell {
+  width: 30px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1.5px solid var(--kmp-border);
+  background: var(--kmp-surface-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--kmp-text);
+}
+.kmp-otp-cell.filled {
+  border-color: #2563EB;
+  background: rgba(37, 99, 235, 0.08);
+}
+.kmp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--kmp-border);
+  background: var(--kmp-surface-2);
+  color: var(--kmp-text-2);
+  font-size: 11px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.kmp-chip.selected {
+  background: rgba(37, 99, 235, 0.14);
+  border-color: #2563EB;
+  color: #1D4ED8;
+}
+.kmp-dark .kmp-chip.selected {
+  color: #93C5FD;
+}
+.kmp-chip-rm {
+  opacity: 0.7;
+  font-size: 12px;
+}
+.kmp-segmented {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 9px;
+  background: var(--kmp-surface-2);
+  border: 1px solid var(--kmp-border);
+  width: 100%;
+}
+.kmp-seg-pill {
+  padding: 5px 7px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--kmp-text-2);
+  font-size: 11px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.kmp-seg-pill.selected {
+  background: var(--kmp-surface);
+  color: var(--kmp-text);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+}
+.kmp-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.kmp-rating-stars {
+  display: inline-flex;
+  gap: 1px;
+  font-size: 12px;
+}
+.kmp-star { color: var(--kmp-border); }
+.kmp-star.filled { color: #F59E0B; }
+.kmp-rating-val {
+  font-size: 11.5px;
+  font-weight: 750;
+  color: var(--kmp-text);
+}
+.kmp-price-atom {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.kmp-price-amt {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--kmp-text);
+}
+.kmp-price-amt.emphasized {
+  font-size: 15px;
+  font-weight: 800;
+}
+.kmp-price-disc {
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.16);
+  color: #059669;
+}
+.kmp-badge-atom {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+}
+.kmp-badge-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+.kmp-var-neutral { background: var(--kmp-surface-2); color: var(--kmp-text-2); border: 1px solid var(--kmp-border); }
+.kmp-var-brand { background: rgba(37, 99, 235, 0.16); color: #1D4ED8; border: 1px solid rgba(37, 99, 235, 0.35); }
+.kmp-var-success { background: rgba(16, 185, 129, 0.15); color: #047857; border: 1px solid rgba(16, 185, 129, 0.38); }
+.kmp-var-warning { background: rgba(245, 158, 11, 0.15); color: #B45309; border: 1px solid rgba(245, 158, 11, 0.38); }
+.kmp-var-error { background: rgba(244, 63, 94, 0.15); color: #BE123C; border: 1px solid rgba(244, 63, 94, 0.38); }
+.kmp-var-info { background: rgba(14, 165, 233, 0.15); color: #0369A1; border: 1px solid rgba(14, 165, 233, 0.35); }
+.kmp-dark .kmp-var-brand { color: #93C5FD; }
+.kmp-dark .kmp-var-success { color: #6EE7B7; }
+.kmp-dark .kmp-var-warning { color: #FCD34D; }
+.kmp-dark .kmp-var-error { color: #FDA4AF; }
+.kmp-dark .kmp-var-info { color: #7DD3FC; }
+
+.kmp-alert-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  width: 100%;
+}
+.kmp-alert-icon {
+  font-size: 14px;
+  line-height: 1.2;
+  flex-shrink: 0;
+}
+.kmp-alert-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.kmp-alert-title {
+  font-size: 11.5px;
+  font-weight: 750;
+}
+.kmp-alert-msg {
+  font-size: 10.5px;
+  opacity: 0.9;
+}
+.kmp-stat-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  background: var(--kmp-surface-2);
+  border: 1px solid var(--kmp-border);
+}
+.kmp-stat-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+.kmp-stat-icon { font-size: 12px; }
+.kmp-stat-val {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--kmp-text);
+  letter-spacing: -0.02em;
+}
+.kmp-stat-delta {
+  align-self: flex-start;
+  font-size: 10px;
+  font-weight: 750;
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+.kmp-stat-delta.pos { background: rgba(16, 185, 129, 0.16); color: #059669; }
+.kmp-stat-delta.neg { background: rgba(244, 63, 94, 0.16); color: #E11D48; }
+
+.kmp-kv-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 0;
+  width: 100%;
+}
+.kmp-kv-row.has-divider {
+  border-bottom: 1px solid var(--kmp-border);
+}
+.kmp-kv-left {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.kmp-kv-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--kmp-text-2);
+}
+.kmp-kv-val {
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--kmp-text);
+  text-align: right;
+}
+.kmp-kv-val.emphasized {
+  font-weight: 800;
+}
+.kmp-qr-code {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 8px;
+  text-align: center;
+}
+.kmp-qr-frame {
+  padding: 8px;
+  border-radius: 12px;
+  background: #FFFFFF;
+  border: 1px solid var(--kmp-border);
+  display: inline-flex;
+}
+.kmp-qr-svg {
+  display: block;
+  fill: #0F172A;
+}
+.kmp-qr-label {
+  font-size: 11.5px;
+  font-weight: 750;
+  color: var(--kmp-text);
+}
+.kmp-form-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: var(--kmp-surface-2);
+  border: 1px solid var(--kmp-border);
+}
+.kmp-form-switch input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #2563EB;
+}
+.kmp-form-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: var(--kmp-surface-2);
+  border: 1px solid var(--kmp-border);
+}
+.kmp-form-slider input[type="range"] {
+  width: 100%;
+  accent-color: #2563EB;
+}
+
 /* Floating Cart Dock */
 .kmp-floating-cart {
   position: absolute;

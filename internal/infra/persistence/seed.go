@@ -31,10 +31,10 @@ type seedWorkspaceSpec struct {
 	ChangeLogSummary string
 }
 
-// SeedDefaultData idempotently populates all 6 multi-tenant vertical workspaces
-// (abeta-fresh, abeta-bites, abeta-pulse, abeta-mart, abeta-spark, abeta-trade),
-// each with all 21 canonical KMP v1 widget templates, curated widgets, targeting
-// and slotting rules, published layouts, immutable v1 snapshots, hydrated
+// SeedDefaultData idempotently populates all 7 multi-tenant vertical workspaces
+// (abeta-fresh, abeta-bites, abeta-pulse, abeta-mart, abeta-spark, abeta-trade,
+// abeta-pay), each with all 21 canonical KMP v1 widget templates, curated widgets,
+// targeting and slotting rules, published layouts, immutable v1 snapshots, hydrated
 // fallbacks, splash configs, and design token overrides. Safe on every startup.
 func SeedDefaultData(ctx context.Context, store domain.Store) error {
 	now := time.Now().UTC()
@@ -45,6 +45,7 @@ func SeedDefaultData(ctx context.Context, store domain.Store) error {
 		buildMartWorkspaceSpec(now),
 		buildSparkWorkspaceSpec(now),
 		buildTradeWorkspaceSpec(now),
+		buildPayWorkspaceSpec(now),
 	}
 
 	for _, ws := range workspaces {

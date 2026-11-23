@@ -343,3 +343,294 @@ func TestTransformComposedBlock_RecursivePromotionAndNonNilContainerChildren(t *
 		t.Fatalf("composed image promotion failed: %+v", row.Children[2])
 	}
 }
+
+func TestTransformComposedBlock_All29KindsAndExtendedAtomPromotion(t *testing.T) {
+	t.Parallel()
+
+	reg := transformer.NewDefaultRegistry()
+	ctx := domain.RequestContext{City: "Bengaluru", Segment: "vip"}
+
+	env, err := reg.Transform(transformer.TransformInput{
+		Slot: domain.LayoutSlot{SlotID: "slot_pay_molded", Enabled: true},
+		Widget: domain.Widget{
+			ID:          "w_pay_molded_all",
+			SnippetType: snippets.SnippetTypeComposedBlock,
+			Active:      true,
+			Props: map[string]any{
+				"recipe_name": "abeta_pay_extended_showcase",
+				"root": map[string]any{
+					"kind": snippets.ComposedNodeCard,
+					"children": []any{
+						map[string]any{
+							"kind":       snippets.ComposedNodeColumn,
+							"spacing_dp": 8,
+							"children": []any{
+								map[string]any{
+									"kind": snippets.ComposedNodeAlertBanner,
+									"alert_banner": map[string]any{
+										"id":      "ab_1",
+										"title":   "Zero-Fee Instant Settlement in {{city}}",
+										"message": "Protected by biometric verification for {{segment}} wallets.",
+										"variant": atoms.VariantSuccess,
+										"icon":    "verified",
+									},
+								},
+								map[string]any{
+									"kind": snippets.ComposedNodeSegmentedControl,
+									"segmented_control": map[string]any{
+										"field_id":    "pay_rail",
+										"selected_id": "instant",
+										"options": []any{
+											map[string]any{"id": "instant", "label": "Instant P2P"},
+											map[string]any{"id": "wire", "label": "Bank Wire"},
+										},
+									},
+								},
+								map[string]any{
+									"kind": snippets.ComposedNodeRow,
+									"children": []any{
+										map[string]any{
+											"kind": snippets.ComposedNodeStatTile,
+											"stat_tile": map[string]any{
+												"id":             "st_bal",
+												"label":          "Wallet Balance",
+												"value":          "$2,480.50",
+												"delta_label":    "+5.0% APY",
+												"delta_positive": true,
+												"icon":           "star",
+											},
+										},
+										map[string]any{
+											"kind": snippets.ComposedNodeBadge,
+											"badge": map[string]any{
+												"id":        "bdg_alerts",
+												"count":     3,
+												"max_count": 99,
+												"variant":   atoms.VariantBrand,
+											},
+										},
+									},
+								},
+								map[string]any{
+									"kind": snippets.ComposedNodeFlowRow,
+									"children": []any{
+										map[string]any{
+											"kind": snippets.ComposedNodeChip,
+											"chip": map[string]any{
+												"id":           "ch_instant",
+												"label":        "Instant · {{city}}",
+												"selected":     true,
+												"leading_icon": "bolt",
+											},
+										},
+										map[string]any{
+											"kind": snippets.ComposedNodeRating,
+											"rating": map[string]any{
+												"id":           "rt_pay",
+												"value":        4.9,
+												"max_stars":    5,
+												"review_count": 4120,
+												"label":        "Trust Score",
+											},
+										},
+										map[string]any{
+											"kind": snippets.ComposedNodePrice,
+											"price": map[string]any{
+												"id":                   "pr_transfer",
+												"amount_text":          "$125.00",
+												"original_amount_text": "$127.50",
+												"discount_label":       "ZERO FEE",
+											},
+										},
+									},
+								},
+								map[string]any{
+									"kind": snippets.ComposedNodeRadioGroup,
+									"radio_group": map[string]any{
+										"field_id":    "funding_source",
+										"label":       "Funding Source",
+										"selected_id": "metal_4092",
+										"options": []any{
+											map[string]any{"id": "metal_4092", "label": "Abeta Metal •••• 4092", "badge": "5% BACK"},
+											map[string]any{"id": "vault_usd", "label": "USD Cash Vault"},
+										},
+									},
+								},
+								map[string]any{
+									"kind": snippets.ComposedNodeSelect,
+									"select": map[string]any{
+										"field_id":    "currency",
+										"label":       "Settlement Currency",
+										"placeholder": "Choose currency",
+										"selected_id": "usd",
+										"options": []any{
+											map[string]any{"id": "usd", "label": "USD — US Dollar"},
+											map[string]any{"id": "eur", "label": "EUR — Euro"},
+										},
+									},
+								},
+								map[string]any{
+									"kind": snippets.ComposedNodeOtpInput,
+									"otp_input": map[string]any{
+										"field_id":    "pay_pin",
+										"label":       "6-Digit Transfer PIN",
+										"length":      6,
+										"masked":      true,
+										"helper_text": "Required for instant transfers over $100",
+									},
+								},
+								map[string]any{
+									"kind": snippets.ComposedNodeKeyValueRow,
+									"key_value_row": map[string]any{
+										"id":           "kv_ref",
+										"label":        "Settlement Ref",
+										"value":        "#PAY-3081",
+										"value_color":  "color.success",
+										"emphasized":   true,
+										"show_divider": true,
+									},
+								},
+								map[string]any{
+									"kind": snippets.ComposedNodeBox,
+									"children": []any{
+										map[string]any{
+											"kind": snippets.ComposedNodeQrCode,
+											"qr_code": map[string]any{
+												"id":      "qr_handle",
+												"payload": "abeta://pay/@alex.rivera?city={{city}}",
+												"label":   "@alex.rivera",
+												"caption": "Scan to pay instantly with zero fee",
+												"size_dp": 160,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Context: ctx,
+	})
+	if err != nil {
+		t.Fatalf("Transform(composed_block extended atoms) failed: %v", err)
+	}
+
+	raw, err := json.Marshal(env)
+	if err != nil {
+		t.Fatalf("json.Marshal failed: %v", err)
+	}
+	var roundTripped snippets.SnippetEnvelope
+	if err := json.Unmarshal(raw, &roundTripped); err != nil {
+		t.Fatalf("json.Unmarshal failed: %v", err)
+	}
+
+	decoded, err := snippets.DecodeSnippetData[snippets.ComposedBlockSnippetData](roundTripped)
+	if err != nil {
+		t.Fatalf("DecodeSnippetData failed: %v", err)
+	}
+
+	col := decoded.Root.Children[0]
+	if len(col.Children) != 9 {
+		t.Fatalf("expected 9 children under column, got %d", len(col.Children))
+	}
+
+	alert := col.Children[0].AlertBanner
+	if alert == nil || alert.Icon == nil || alert.Icon.Name != "verified" || alert.Title != "Zero-Fee Instant Settlement in Bengaluru" {
+		t.Fatalf("alert_banner promotion/interpolation failed: %+v", alert)
+	}
+	seg := col.Children[1].SegmentedControl
+	if seg == nil || seg.FieldID != "pay_rail" || len(seg.Options) != 2 {
+		t.Fatalf("segmented_control decode failed: %+v", seg)
+	}
+	stat := col.Children[2].Children[0].StatTile
+	if stat == nil || stat.Icon == nil || stat.Icon.Name != "star" || stat.Value != "$2,480.50" {
+		t.Fatalf("stat_tile promotion failed: %+v", stat)
+	}
+	badge := col.Children[2].Children[1].Badge
+	if badge == nil || badge.Count == nil || *badge.Count != 3 || badge.Variant != atoms.VariantBrand {
+		t.Fatalf("badge decode failed: %+v", badge)
+	}
+	chip := col.Children[3].Children[0].Chip
+	if chip == nil || chip.LeadingIcon == nil || chip.LeadingIcon.Name != "bolt" || chip.Label != "Instant · Bengaluru" {
+		t.Fatalf("chip promotion/interpolation failed: %+v", chip)
+	}
+	rating := col.Children[3].Children[1].Rating
+	if rating == nil || rating.Value != 4.9 || rating.ReviewCount == nil || *rating.ReviewCount != 4120 {
+		t.Fatalf("rating decode failed: %+v", rating)
+	}
+	price := col.Children[3].Children[2].Price
+	if price == nil || price.AmountText != "$125.00" || price.DiscountLabel != "ZERO FEE" {
+		t.Fatalf("price decode failed: %+v", price)
+	}
+	rg := col.Children[4].RadioGroup
+	if rg == nil || rg.FieldID != "funding_source" || len(rg.Options) != 2 {
+		t.Fatalf("radio_group decode failed: %+v", rg)
+	}
+	sel := col.Children[5].Select
+	if sel == nil || sel.FieldID != "currency" || sel.SelectedID != "usd" {
+		t.Fatalf("select decode failed: %+v", sel)
+	}
+	otp := col.Children[6].OtpInput
+	if otp == nil || otp.FieldID != "pay_pin" || otp.Length != 6 || !otp.Masked {
+		t.Fatalf("otp_input decode failed: %+v", otp)
+	}
+	kv := col.Children[7].KeyValueRow
+	if kv == nil || kv.Value != "#PAY-3081" || kv.ValueColor == nil || kv.ValueColor.Token != "color.success" {
+		t.Fatalf("key_value_row color promotion failed: %+v", kv)
+	}
+	qr := col.Children[8].Children[0].QrCode
+	if qr == nil || qr.Payload != "abeta://pay/@alex.rivera?city=Bengaluru" || qr.SizeDp != 160 {
+		t.Fatalf("qr_code decode/interpolation failed: %+v", qr)
+	}
+}
+
+func TestTransformComposedBlock_ExtendedShorthandStrings(t *testing.T) {
+	t.Parallel()
+
+	reg := transformer.NewDefaultRegistry()
+	env, err := reg.Transform(transformer.TransformInput{
+		Slot: domain.LayoutSlot{SlotID: "slot_shorthand", Enabled: true},
+		Widget: domain.Widget{
+			ID:          "w_shorthand",
+			SnippetType: snippets.SnippetTypeComposedBlock,
+			Active:      true,
+			Props: map[string]any{
+				"root": map[string]any{
+					"kind": snippets.ComposedNodeColumn,
+					"children": []any{
+						map[string]any{"kind": snippets.ComposedNodeChip, "chip": "Zero Fee"},
+						map[string]any{"kind": snippets.ComposedNodeAlertBanner, "alert_banner": "Instant Clearing Enabled"},
+						map[string]any{"kind": snippets.ComposedNodePrice, "price": "$49.00"},
+						map[string]any{"kind": snippets.ComposedNodeBadge, "badge": "NEW"},
+						map[string]any{"kind": snippets.ComposedNodeQrCode, "qr_code": "abeta://pay/@maya"},
+					},
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("Transform shorthand failed: %v", err)
+	}
+	decoded, err := snippets.DecodeSnippetData[snippets.ComposedBlockSnippetData](env)
+	if err != nil {
+		t.Fatalf("DecodeSnippetData failed: %v", err)
+	}
+	ch := decoded.Root.Children
+	if ch[0].Chip == nil || ch[0].Chip.Label != "Zero Fee" {
+		t.Fatalf("chip shorthand failed: %+v", ch[0])
+	}
+	if ch[1].AlertBanner == nil || ch[1].AlertBanner.Title != "Instant Clearing Enabled" {
+		t.Fatalf("alert_banner shorthand failed: %+v", ch[1])
+	}
+	if ch[2].Price == nil || ch[2].Price.AmountText != "$49.00" {
+		t.Fatalf("price shorthand failed: %+v", ch[2])
+	}
+	if ch[3].Badge == nil || ch[3].Badge.Label != "NEW" {
+		t.Fatalf("badge shorthand failed: %+v", ch[3])
+	}
+	if ch[4].QrCode == nil || ch[4].QrCode.Payload != "abeta://pay/@maya" {
+		t.Fatalf("qr_code shorthand failed: %+v", ch[4])
+	}
+}

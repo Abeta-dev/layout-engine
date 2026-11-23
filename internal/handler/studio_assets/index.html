@@ -522,6 +522,8 @@
             <select id="ctx-segment">
               <option value="standard">standard</option>
               <option value="vip">vip</option>
+              <option value="metal">metal</option>
+              <option value="enterprise">enterprise</option>
               <option value="new_user">new_user</option>
               <option value="returning">returning</option>
             </select>
@@ -674,6 +676,53 @@
             <input id="wf-active" type="checkbox" checked />
             <span>Active</span>
           </label>
+        </div>
+
+        <div id="wf-composed-molder-bar" class="config-subbox molder-helper-bar" hidden>
+          <div class="subbox-title">Atomic Snippet Molder — 29 ComposedNodeKinds (maxDepth &le; 6)</div>
+          <div class="field-row">
+            <div class="field-group">
+              <label for="wf-composed-node-kind">Insert Composed Node Kind</label>
+              <select id="wf-composed-node-kind">
+                <optgroup label="Layout Containers (5)">
+                  <option value="column">column</option>
+                  <option value="row">row</option>
+                  <option value="box">box</option>
+                  <option value="card">card</option>
+                  <option value="flow_row">flow_row</option>
+                </optgroup>
+                <optgroup label="Core Wire Atoms (12)">
+                  <option value="text">text</option>
+                  <option value="button">button</option>
+                  <option value="tag">tag</option>
+                  <option value="icon">icon</option>
+                  <option value="image">image</option>
+                  <option value="avatar">avatar</option>
+                  <option value="progress">progress</option>
+                  <option value="divider">divider</option>
+                  <option value="spacer">spacer</option>
+                  <option value="stepper">stepper</option>
+                  <option value="countdown">countdown</option>
+                  <option value="rolling_counter">rolling_counter</option>
+                </optgroup>
+                <optgroup label="Extended Wire Atoms (12)">
+                  <option value="radio_group">radio_group</option>
+                  <option value="select">select</option>
+                  <option value="otp_input">otp_input</option>
+                  <option value="chip">chip</option>
+                  <option value="segmented_control">segmented_control</option>
+                  <option value="rating">rating</option>
+                  <option value="price">price</option>
+                  <option value="badge">badge</option>
+                  <option value="alert_banner">alert_banner</option>
+                  <option value="stat_tile">stat_tile</option>
+                  <option value="key_value_row">key_value_row</option>
+                  <option value="qr_code">qr_code</option>
+                </optgroup>
+              </select>
+            </div>
+            <button id="btn-insert-composed-node" type="button" class="btn btn-xs btn-secondary">+ Insert Node</button>
+          </div>
         </div>
 
         <div class="field-group">

@@ -1,6 +1,6 @@
 # One-click free hosting blueprint for Render (https://render.com)
 # Deploys Abeta Dynamic Layout Engine + Visual Studio (/studio) on the $0/month free tier
-# with embedded SQLite WAL and all 6 pre-seeded multi-tenant vertical workspaces.
+# with embedded SQLite WAL and all 7 pre-seeded multi-tenant vertical workspaces.
 services:
   - type: web
     name: abeta-layout-engine

@@ -22,7 +22,7 @@ func TestSeedDefaultDataIdempotentAndWireAuthentic(t *testing.T) {
 	ctx := context.Background()
 	store := openTestStore(t)
 
-	// Call twice to verify strict idempotency across all 6 vertical workspaces.
+	// Call twice to verify strict idempotency across all 7 vertical workspaces.
 	if err := SeedDefaultData(ctx, store); err != nil {
 		t.Fatalf("first SeedDefaultData failed: %v", err)
 	}
@@ -31,8 +31,8 @@ func TestSeedDefaultDataIdempotentAndWireAuthentic(t *testing.T) {
 	}
 
 	allTenants, err := store.ListTenants(ctx)
-	if err != nil || len(allTenants) != 6 {
-		t.Fatalf("expected 6 seeded vertical tenants, got %d (err=%v)", len(allTenants), err)
+	if err != nil || len(allTenants) != 7 {
+		t.Fatalf("expected 7 seeded vertical tenants, got %d (err=%v)", len(allTenants), err)
 	}
 
 	expectations := []verticalSeedExpectation{
@@ -65,6 +65,11 @@ func TestSeedDefaultDataIdempotentAndWireAuthentic(t *testing.T) {
 			slug: "abeta-trade", name: "Abeta Trade — B2B Wholesale & RFQ Sourcing",
 			expectedLayouts:    []string{"trade-home", "trade-supplier"},
 			slottingLayoutSlug: "trade-home", minWidgets: 9, minRules: 1,
+		},
+		{
+			slug: "abeta-pay", name: "Abeta Pay — Instant Payments & Smart Cards",
+			expectedLayouts:    []string{"pay-home", "pay-transfer", "pay-cards", "pay-receipt"},
+			slottingLayoutSlug: "pay-home", minWidgets: 20, minRules: 2,
 		},
 	}
 
@@ -241,6 +246,79 @@ func verifyFreshAndVerticalSpecifics(t *testing.T, ctx context.Context, store *S
 	}
 	if !foundDeck {
 		t.Fatalf("expected swipe_deck snippet on spark-deck")
+	}
+
+	verifyPayWorkspaceSpecifics(t, ctx, store)
+}
+
+func verifyPayWorkspaceSpecifics(t *testing.T, ctx context.Context, store *SQLStore) {
+	t.Helper()
+
+	payTenant, err := store.GetTenantBySlug(ctx, "abeta-pay")
+	if err != nil {
+		t.Fatalf("get abeta-pay: %v", err)
+	}
+
+	seenKinds := map[string]bool{}
+	var walkComposed func(n snippets.ComposedNode)
+	walkComposed = func(n snippets.ComposedNode) {
+		seenKinds[n.Kind] = true
+		for _, ch := range n.Children {
+			walkComposed(ch)
+		}
+	}
+
+	for _, slug := range []string{"pay-home", "pay-transfer", "pay-cards", "pay-receipt"} {
+		fb, err := store.GetFallback(ctx, payTenant.ID, slug)
+		if err != nil {
+			t.Fatalf("get abeta-pay/%s fallback: %v", slug, err)
+		}
+		for _, env := range fb.Page.Snippets {
+			if env.SnippetType == snippets.SnippetTypeComposedBlock {
+				cb, err := snippets.DecodeSnippetData[snippets.ComposedBlockSnippetData](env)
+				if err != nil {
+					t.Fatalf("decode composed_block on %s: %v", slug, err)
+				}
+				walkComposed(cb.Root)
+			}
+		}
+	}
+
+	wantExtendedKinds := []string{
+		snippets.ComposedNodeRadioGroup,
+		snippets.ComposedNodeSelect,
+		snippets.ComposedNodeOtpInput,
+		snippets.ComposedNodeChip,
+		snippets.ComposedNodeSegmentedControl,
+		snippets.ComposedNodeRating,
+		snippets.ComposedNodePrice,
+		snippets.ComposedNodeBadge,
+		snippets.ComposedNodeAlertBanner,
+		snippets.ComposedNodeStatTile,
+		snippets.ComposedNodeKeyValueRow,
+		snippets.ComposedNodeQrCode,
+	}
+	for _, kind := range wantExtendedKinds {
+		if !seenKinds[kind] {
+			t.Errorf("expected abeta-pay molded widgets to showcase extended ComposedNodeKind %q (seen=%v)", kind, seenKinds)
+		}
+	}
+
+	rcptFB, err := store.GetFallback(ctx, payTenant.ID, "pay-receipt")
+	if err != nil {
+		t.Fatalf("get pay-receipt fallback: %v", err)
+	}
+	foundPayTracker := false
+	for _, env := range rcptFB.Page.Snippets {
+		if env.SnippetType == snippets.SnippetTypeOrderTracker {
+			d, err := snippets.DecodeSnippetData[snippets.OrderTrackerSnippetData](env)
+			if err == nil && d.OrderCode == "#PAY-3081" && len(d.Steps) == 4 {
+				foundPayTracker = true
+			}
+		}
+	}
+	if !foundPayTracker {
+		t.Fatalf("expected 4-step #PAY-3081 order_tracker on abeta-pay/pay-receipt")
 	}
 }
 
