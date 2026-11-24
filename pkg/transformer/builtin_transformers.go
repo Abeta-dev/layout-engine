@@ -484,6 +484,7 @@ func wrapEnvelope(input TransformInput, snippetType string, data any) snippets.S
 		SnippetParentID: input.parentID,
 		SnippetType:     snippetType,
 		Data:            data,
+		Sticky:          resolveSticky(input),
 	}
 }
 

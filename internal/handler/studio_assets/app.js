@@ -31,6 +31,8 @@
     'box',
     'card',
     'flow_row',
+    'scroll_row',
+    'grid',
     'text',
     'button',
     'tag',
@@ -55,7 +57,24 @@
     'stat_tile',
     'key_value_row',
     'qr_code',
+    'text_field',
+    'switch',
+    'checkbox',
+    'slider',
+    'media_pager',
   ];
+
+  const CANONICAL_BOX_ALIGNMENTS = new Set([
+    'top_start',
+    'top_center',
+    'top_end',
+    'center_start',
+    'center',
+    'center_end',
+    'bottom_start',
+    'bottom_center',
+    'bottom_end',
+  ]);
 
   const state = {
     tenant: 'abeta-fresh',
@@ -789,7 +808,10 @@
       case 'box':
       case 'card':
       case 'flow_row':
+      case 'scroll_row':
         return { kind, spacing_dp: 8, children: [] };
+      case 'grid':
+        return { kind, columns: 2, spacing_dp: 8, columns_by_width: { compact: 2, medium: 3, expanded: 4 }, children: [] };
       case 'text':
         return { kind, text: { text: 'Sample Heading' } };
       case 'button':
@@ -814,6 +836,27 @@
         return { kind, countdown: { countdown_id: 'cd_1', remaining_seconds: 300, label: 'Ends in' } };
       case 'rolling_counter':
         return { kind, counter_value: '$2,480.50' };
+      case 'text_field':
+        return { kind, text_field: { field_id: 'delivery_note', label: 'Delivery Instructions', placeholder: 'Gate code or drop-off note...' } };
+      case 'switch':
+        return { kind, switch: { field_id: 'leave_at_door', label: 'Leave at Door', subtitle: 'Contactless express drop-off', checked: true } };
+      case 'checkbox':
+        return { kind, checkbox: { field_id: 'no_cutlery', label: 'Skip disposable cutlery', checked: true } };
+      case 'slider':
+        return { kind, slider: { field_id: 'rider_tip', label: 'Rider Tip', value: 2, min_value: 0, max_value: 10, steps: 10, unit_label: 'USD' } };
+      case 'media_pager':
+        return {
+          kind,
+          media_pager: {
+            id: 'media_pager_1',
+            height_dp: 140,
+            show_indicators: true,
+            items: [
+              { id: 'slide_1', url: 'https://cdn.abeta.dev/fresh/hero_1.png', content_description: 'Express Hero 1' },
+              { id: 'slide_2', url: 'https://cdn.abeta.dev/fresh/hero_2.png', content_description: 'Express Hero 2' },
+            ],
+          },
+        };
       case 'radio_group':
         return { kind, radio_group: { field_id: 'funding_source', label: 'Choose Option', selected_id: 'opt_1', options: [{ id: 'opt_1', label: 'Option One', badge: 'BEST' }, { id: 'opt_2', label: 'Option Two' }] } };
       case 'select':
@@ -843,7 +886,16 @@
     }
   }
 
-  function renderComposedNode(node, depth = 0) {
+  function resolveComposedGridColumns(node) {
+    const bw = node?.columns_by_width || {};
+    let cols = Number(node?.columns || 2);
+    if (state.device === 'desktop' && Number(bw.expanded) > 0) cols = Number(bw.expanded);
+    else if (state.device === 'tablet' && Number(bw.medium) > 0) cols = Number(bw.medium);
+    else if (state.device === 'phone' && Number(bw.compact) > 0) cols = Number(bw.compact);
+    return Math.max(1, Math.min(6, cols));
+  }
+
+  function renderComposedNode(node, depth = 0, parentKind = '') {
     if (!node || depth > 6) return '';
     const kind = node.kind || '';
     const loopCls = motionLoopClass(node.motion);
@@ -854,73 +906,158 @@
       ? 'align-items:center;'
       : (node.vertical_alignment === 'bottom' || node.alignment === 'end' ? 'align-items:flex-end;' : '');
     const baseStyle = `${gap}${weight}${arr ? `${arr};` : ''}${alignItems}`;
-    const childrenHtml = Array.isArray(node.children)
-      ? node.children.map((ch) => renderComposedNode(ch, depth + 1)).join('')
-      : '';
+    const childrenArr = Array.isArray(node.children) ? node.children : [];
+    const childrenHtml = childrenArr.map((ch) => renderComposedNode(ch, depth + 1, kind)).join('');
+
+    const wrapBoxOverlay = (html) => {
+      if (!html) return '';
+      const rawAlign = typeof node.box_alignment === 'string' ? node.box_alignment.trim() : '';
+      if (parentKind === 'box' && CANONICAL_BOX_ALIGNMENTS.has(rawAlign)) {
+        return `<div class="kmp-box-child kmp-box-align-${rawAlign}">${html}</div>`;
+      }
+      return html;
+    };
 
     switch (kind) {
       case 'card':
-        return `<div class="kmp-composed-card ${loopCls}" style="${baseStyle}">${childrenHtml}</div>`;
+        return wrapBoxOverlay(`<div class="kmp-composed-card ${loopCls}" style="${baseStyle}">${childrenHtml}</div>`);
       case 'column':
-        return `<div class="kmp-composed-column ${loopCls}" style="${baseStyle}">${childrenHtml}</div>`;
+        return wrapBoxOverlay(`<div class="kmp-composed-column ${loopCls}" style="${baseStyle}">${childrenHtml}</div>`);
       case 'row':
-        return `<div class="kmp-composed-row ${loopCls}" style="${baseStyle}">${childrenHtml}</div>`;
-      case 'box':
-        return `<div class="kmp-composed-box ${loopCls}" style="${baseStyle}">${childrenHtml}</div>`;
+        return wrapBoxOverlay(`<div class="kmp-composed-row ${loopCls}" style="${baseStyle}">${childrenHtml}</div>`);
+      case 'box': {
+        const hasOverlay = childrenArr.some((ch) => typeof ch?.box_alignment === 'string' && CANONICAL_BOX_ALIGNMENTS.has(ch.box_alignment.trim()));
+        return wrapBoxOverlay(`<div class="kmp-composed-box ${hasOverlay ? 'has-overlay' : ''} ${loopCls}" style="${baseStyle}">${childrenHtml}</div>`);
+      }
       case 'flow_row':
-        return `<div class="kmp-composed-flow-row ${loopCls}" style="${baseStyle}">${childrenHtml}</div>`;
+        return wrapBoxOverlay(`<div class="kmp-composed-flow-row ${loopCls}" style="${baseStyle}">${childrenHtml}</div>`);
+      case 'scroll_row':
+        return wrapBoxOverlay(`<div class="kmp-composed-scroll-row ${loopCls}" style="${baseStyle}">${childrenHtml}</div>`);
+      case 'grid': {
+        const cols = resolveComposedGridColumns(node);
+        return wrapBoxOverlay(`<div class="kmp-composed-grid ${loopCls}" style="grid-template-columns:repeat(${cols},minmax(0,1fr));${baseStyle}">${childrenHtml}</div>`);
+      }
       case 'text': {
         const token = node.text?.typography?.token || '';
         const isTitle = token.includes('headline') || token.includes('title');
         const isSmall = token.includes('small') || token.includes('label');
         const cls = isTitle ? 'kmp-h-title' : (isSmall ? 'kmp-h-sub' : 'kmp-banner-body');
-        return `<div class="${cls} ${loopCls}" style="${weight}">${esc(textOf(node.text))}</div>`;
+        return wrapBoxOverlay(`<div class="${cls} ${loopCls}" style="${weight}">${esc(textOf(node.text))}</div>`);
       }
       case 'button':
         if (!node.button) return '';
-        return `<button type="button" class="kmp-btn ${node.button.variant === 'secondary' || node.button.variant === 'outline' ? 'kmp-btn-secondary' : 'kmp-btn-primary'} ${motionLoopClass(node.button.motion) || loopCls}">${esc(node.button.label || 'Action')}</button>`;
+        return wrapBoxOverlay(`<button type="button" class="kmp-btn ${node.button.variant === 'secondary' || node.button.variant === 'outline' ? 'kmp-btn-secondary' : 'kmp-btn-primary'} ${motionLoopClass(node.button.motion) || loopCls}">${esc(node.button.label || 'Action')}</button>`);
       case 'tag':
         if (!node.tag) return '';
-        return `<span class="kmp-tag ${motionLoopClass(node.tag.motion) || loopCls}">${esc(node.tag.label || textOf(node.tag))}</span>`;
+        return wrapBoxOverlay(`<span class="kmp-tag ${motionLoopClass(node.tag.motion) || loopCls}">${esc(node.tag.label || textOf(node.tag))}</span>`);
       case 'icon': {
         const glyph = previewIconGlyph(node.icon);
         const iconName = (node.icon?.name || '').toLowerCase();
         const isDone = iconName === 'check_circle' || iconName === 'verified';
-        return `<span class="kmp-composed-icon ${isDone ? 'done' : ''} ${loopCls}" title="${esc(node.icon?.name || '')}">${esc(glyph || '•')}</span>`;
+        return wrapBoxOverlay(`<span class="kmp-composed-icon ${isDone ? 'done' : ''} ${loopCls}" title="${esc(node.icon?.name || '')}">${esc(glyph || '•')}</span>`);
       }
-      case 'image':
-        return node.image?.url
-          ? `<img class="kmp-composed-img ${loopCls}" src="${esc(node.image.url)}" alt="${esc(node.image.content_description || '')}" />`
-          : '';
+      case 'image': {
+        if (!node.image?.url) return '';
+        const hStyle = node.image.height_dp ? `height:${Math.min(180, Number(node.image.height_dp))}px;` : '';
+        const boxImgCls = parentKind === 'box' ? 'kmp-composed-img-box' : '';
+        return wrapBoxOverlay(`<img class="kmp-composed-img ${boxImgCls} ${loopCls}" style="${hStyle}" src="${esc(node.image.url)}" alt="${esc(node.image.content_description || '')}" />`);
+      }
       case 'avatar':
-        return `<span class="kmp-avatar ${loopCls}">${esc(node.avatar?.initials || 'AB')}</span>`;
+        return wrapBoxOverlay(`<span class="kmp-avatar ${loopCls}">${esc(node.avatar?.initials || 'AB')}</span>`);
       case 'progress': {
         const pct = Math.min(100, Math.max(0, Math.round((Number(node.progress?.progress ?? node.progress?.value ?? 0)) * 100)));
-        return `
+        return wrapBoxOverlay(`
           <div class="kmp-composed-progress ${loopCls}" style="${weight}">
             <div class="kmp-progress-track"><div class="kmp-progress-fill" style="width:${pct}%"></div></div>
             ${node.progress?.label ? `<div class="kmp-h-sub">${esc(node.progress.label)}</div>` : ''}
-          </div>`;
+          </div>`);
       }
       case 'divider':
-        return `<hr class="kmp-divider" />`;
+        return wrapBoxOverlay(`<hr class="kmp-divider" />`);
       case 'spacer':
-        return `<div style="height:${Number(node.spacer?.height_dp || 8)}px;width:${Number(node.spacer?.width_dp || 0)}px"></div>`;
+        return wrapBoxOverlay(`<div style="height:${Number(node.spacer?.height_dp || 8)}px;width:${Number(node.spacer?.width_dp || 0)}px"></div>`);
       case 'stepper': {
         const qty = Number(node.stepper?.quantity || 0);
-        return `<span class="kmp-tag ${loopCls}">${qty > 0 ? `Qty ${qty}` : esc(node.stepper?.label || 'ADD')}</span>`;
+        return wrapBoxOverlay(`<span class="kmp-tag ${loopCls}">${qty > 0 ? `Qty ${qty}` : esc(node.stepper?.label || 'ADD')}</span>`);
       }
       case 'countdown':
-        return renderCountdownPill(node.countdown);
+        return wrapBoxOverlay(renderCountdownPill(node.countdown));
       case 'rolling_counter':
-        return `<span class="kmp-rolling-counter mono ${loopCls}">${esc(node.counter_value || '0')}</span>`;
+        return wrapBoxOverlay(`<span class="kmp-rolling-counter mono ${loopCls}">${esc(node.counter_value || '0')}</span>`);
+
+      case 'text_field': {
+        const tf = node.text_field || {};
+        return wrapBoxOverlay(`
+          <div class="kmp-composed-textfield ${loopCls}" style="${weight}">
+            ${tf.label ? `<label class="kmp-atom-label">${esc(tf.label)}${tf.required ? ' *' : ''}</label>` : ''}
+            <input type="text" class="kmp-input-box" placeholder="${esc(tf.placeholder || tf.label || tf.field_id || '')}" value="${esc(tf.initial_value || '')}" />
+            ${tf.helper_text ? `<div class="kmp-h-sub">${esc(tf.helper_text)}</div>` : ''}
+          </div>`);
+      }
+
+      case 'switch': {
+        const sw = node.switch || {};
+        return wrapBoxOverlay(`
+          <label class="kmp-composed-switch kmp-form-switch ${loopCls}" style="${weight}">
+            <span>
+              <div class="kmp-kv-label">${esc(sw.label || sw.field_id || 'Toggle')}</div>
+              ${sw.subtitle ? `<div class="kmp-h-sub">${esc(sw.subtitle)}</div>` : ''}
+            </span>
+            <input type="checkbox" ${sw.checked ? 'checked' : ''} />
+          </label>`);
+      }
+
+      case 'checkbox': {
+        const cb = node.checkbox || {};
+        return wrapBoxOverlay(`
+          <label class="kmp-composed-checkbox kmp-form-switch ${loopCls}" style="${weight}">
+            <span>
+              <div class="kmp-kv-label">${esc(cb.label || cb.field_id || 'Check')}</div>
+              ${cb.subtitle ? `<div class="kmp-h-sub">${esc(cb.subtitle)}</div>` : ''}
+            </span>
+            <input type="checkbox" ${cb.checked ? 'checked' : ''} />
+          </label>`);
+      }
+
+      case 'slider': {
+        const sl = node.slider || {};
+        const minV = Number(sl.min_value ?? 0);
+        const maxV = Number(sl.max_value ?? 100);
+        const curV = Number(sl.value ?? minV);
+        return wrapBoxOverlay(`
+          <div class="kmp-composed-slider kmp-form-slider ${loopCls}" style="${weight}">
+            <div class="card-row">
+              <span class="kmp-kv-label">${esc(sl.label || sl.field_id || 'Slider')}</span>
+              ${sl.show_value === false ? '' : `<span class="mono kmp-h-sub">${esc(curV)}${sl.unit_label ? ` ${esc(sl.unit_label)}` : ''}</span>`}
+            </div>
+            <input type="range" min="${minV}" max="${maxV}" value="${curV}" />
+          </div>`);
+      }
+
+      case 'media_pager': {
+        const mp = node.media_pager || {};
+        const items = Array.isArray(mp.items) ? mp.items : [];
+        const height = Math.max(84, Math.min(220, Number(mp.height_dp || 140)));
+        const showDots = mp.show_indicators !== false && items.length > 1;
+        return wrapBoxOverlay(`
+          <div class="kmp-media-pager ${loopCls}" style="${weight}">
+            <div class="kmp-media-pager-track">
+              ${items.length ? items.map((img, idx) => `
+                <div class="kmp-media-pager-slide" style="height:${height}px">
+                  ${img?.url ? `<img class="kmp-media-pager-img" src="${esc(img.url)}" alt="${esc(img.content_description || `Slide ${idx + 1}`)}" />` : ''}
+                  <span class="kmp-media-pager-caption">${esc(img?.content_description || `Slide ${idx + 1}`)}</span>
+                </div>`).join('') : `<div class="kmp-media-pager-slide" style="height:${height}px"><span class="kmp-media-pager-caption">Media Pager</span></div>`}
+            </div>
+            ${showDots ? `<div class="kmp-media-pager-dots">${items.map((_, i) => `<span class="kmp-media-pager-dot ${i === 0 ? 'active' : ''}"></span>`).join('')}</div>` : ''}
+          </div>`);
+      }
 
       case 'radio_group': {
         const rg = node.radio_group || {};
         const key = `rg:${rg.field_id || node.node_id || 'rg'}`;
         const selId = key in state.composedSelections ? state.composedSelections[key] : rg.selected_id;
         const opts = Array.isArray(rg.options) ? rg.options : [];
-        return `
+        return wrapBoxOverlay(`
           <div class="kmp-radio-group ${loopCls}" style="${weight}">
             ${rg.label ? `<div class="kmp-atom-label">${esc(rg.label)}</div>` : ''}
             <div class="kmp-radio-list">
@@ -937,7 +1074,7 @@
                   </button>`;
               }).join('')}
             </div>
-          </div>`;
+          </div>`);
       }
 
       case 'select': {
@@ -945,7 +1082,7 @@
         const key = `sel:${sel.field_id || node.node_id || 'sel'}`;
         const curVal = key in state.composedSelections ? state.composedSelections[key] : (sel.selected_id || '');
         const opts = Array.isArray(sel.options) ? sel.options : [];
-        return `
+        return wrapBoxOverlay(`
           <div class="kmp-select ${loopCls}" style="${weight}">
             ${sel.label ? `<div class="kmp-atom-label">${esc(sel.label)}</div>` : ''}
             <select class="kmp-select-box" data-composed-select="${esc(key)}" aria-label="${esc(sel.label || sel.placeholder || 'Select')}">
@@ -953,7 +1090,7 @@
               ${opts.map((o) => `<option value="${esc(o.id)}" ${o.id === curVal ? 'selected' : ''}>${esc(o.label || o.id)}${o.badge ? ` (${esc(o.badge)})` : ''}</option>`).join('')}
             </select>
             ${sel.error_text ? `<div class="kmp-atom-error">${esc(sel.error_text)}</div>` : (sel.helper_text ? `<div class="kmp-h-sub">${esc(sel.helper_text)}</div>` : '')}
-          </div>`;
+          </div>`);
       }
 
       case 'otp_input': {
@@ -966,12 +1103,12 @@
           const display = ch ? (otp.masked ? '•' : ch) : (otp.masked && i < 2 ? '•' : '');
           boxes.push(`<span class="kmp-otp-cell ${display ? 'filled' : ''}">${esc(display)}</span>`);
         }
-        return `
+        return wrapBoxOverlay(`
           <div class="kmp-otp-input ${loopCls}" style="${weight}">
             ${otp.label ? `<div class="kmp-atom-label">${esc(otp.label)}</div>` : ''}
             <div class="kmp-otp-cells" aria-label="${esc(otp.label || 'OTP')}">${boxes.join('')}</div>
             ${otp.error_text ? `<div class="kmp-atom-error">${esc(otp.error_text)}</div>` : (otp.helper_text ? `<div class="kmp-h-sub">${esc(otp.helper_text)}</div>` : '')}
-          </div>`;
+          </div>`);
       }
 
       case 'chip': {
@@ -979,12 +1116,12 @@
         const key = `chip:${ch.id || node.node_id || ch.label || 'c'}`;
         const active = key in state.composedSelections ? state.composedSelections[key] === '1' : Boolean(ch.selected);
         const glyph = ch.leading_icon ? previewIconGlyph(ch.leading_icon) : '';
-        return `
+        return wrapBoxOverlay(`
           <button type="button" class="kmp-chip ${active ? 'selected' : ''} ${loopCls}" data-composed-toggle="${esc(key)}" data-composed-cur="${active ? '1' : '0'}">
             ${glyph ? `<span aria-hidden="true">${esc(glyph)}</span>` : ''}
             <span>${esc(ch.label || ch.id || 'Chip')}</span>
             ${ch.removable ? '<span class="kmp-chip-rm" aria-hidden="true">×</span>' : ''}
-          </button>`;
+          </button>`);
       }
 
       case 'segmented_control': {
@@ -992,13 +1129,13 @@
         const key = `seg:${sc.field_id || node.node_id || 'seg'}`;
         const selId = key in state.composedSelections ? state.composedSelections[key] : sc.selected_id;
         const opts = Array.isArray(sc.options) ? sc.options : [];
-        return `
+        return wrapBoxOverlay(`
           <div class="kmp-segmented ${loopCls}" style="${weight}" role="group">
             ${opts.map((o) => {
               const active = o.id === selId;
               return `<button type="button" class="kmp-seg-pill ${active ? 'selected' : ''}" data-composed-key="${esc(key)}" data-composed-val="${esc(o.id)}">${esc(o.label || o.id)}</button>`;
             }).join('')}
-          </div>`;
+          </div>`);
       }
 
       case 'rating': {
@@ -1010,24 +1147,24 @@
         for (let i = 1; i <= maxStars; i++) {
           stars += `<span class="kmp-star ${i <= full ? 'filled' : ''}">★</span>`;
         }
-        return `
+        return wrapBoxOverlay(`
           <div class="kmp-rating ${loopCls}">
             <span class="kmp-rating-stars" aria-label="${val} of ${maxStars} stars">${stars}</span>
             <span class="kmp-rating-val mono">${val.toFixed(1)}</span>
             ${rt.review_count != null ? `<span class="kmp-h-sub">(${Number(rt.review_count).toLocaleString()})</span>` : ''}
             ${rt.label ? `<span class="kmp-h-sub">${esc(rt.label)}</span>` : ''}
-          </div>`;
+          </div>`);
       }
 
       case 'price': {
         const pr = node.price || {};
-        return `
+        return wrapBoxOverlay(`
           <div class="kmp-price-atom ${loopCls}">
             <span class="kmp-price-amt ${pr.emphasized === false ? '' : 'emphasized'}">${esc(pr.amount_text || '$0.00')}</span>
             ${pr.unit_suffix ? `<span class="kmp-h-sub">${esc(pr.unit_suffix)}</span>` : ''}
             ${pr.original_amount_text ? `<span class="kmp-orig-price">${esc(pr.original_amount_text)}</span>` : ''}
             ${pr.discount_label ? `<span class="kmp-price-disc">${esc(pr.discount_label)}</span>` : ''}
-          </div>`;
+          </div>`);
       }
 
       case 'badge': {
@@ -1035,14 +1172,14 @@
         const variant = normalizeVariant(b.variant);
         const bLoop = motionLoopClass(b.motion) || loopCls;
         if (b.dot_only) {
-          return `<span class="kmp-badge-dot kmp-var-${variant} ${bLoop}" aria-label="${esc(b.label || variant)}"></span>`;
+          return wrapBoxOverlay(`<span class="kmp-badge-dot kmp-var-${variant} ${bLoop}" aria-label="${esc(b.label || variant)}"></span>`);
         }
         let text = b.label || '';
         if (b.count != null) {
           const maxC = Number(b.max_count || 99);
           text = Number(b.count) > maxC ? `${maxC}+` : String(b.count);
         }
-        return `<span class="kmp-badge-atom kmp-var-${variant} ${bLoop}">${esc(text || '•')}</span>`;
+        return wrapBoxOverlay(`<span class="kmp-badge-atom kmp-var-${variant} ${bLoop}">${esc(text || '•')}</span>`);
       }
 
       case 'alert_banner': {
@@ -1051,7 +1188,7 @@
         if (state.dismissedAlerts[alertKey]) return '';
         const variant = normalizeVariant(al.variant);
         const glyph = al.icon ? previewIconGlyph(al.icon) : '';
-        return `
+        return wrapBoxOverlay(`
           <div class="kmp-alert-banner kmp-var-${variant} ${loopCls}" style="${weight}">
             ${glyph ? `<span class="kmp-alert-icon" aria-hidden="true">${esc(glyph)}</span>` : ''}
             <div class="kmp-alert-copy">
@@ -1060,14 +1197,14 @@
             </div>
             ${al.action_label ? `<button type="button" class="kmp-btn kmp-btn-secondary">${esc(al.action_label)}</button>` : ''}
             ${al.dismissible ? `<button type="button" class="kmp-nudge-dismiss" data-dismiss-alert="${esc(alertKey)}" aria-label="Dismiss">&times;</button>` : ''}
-          </div>`;
+          </div>`);
       }
 
       case 'stat_tile': {
         const st = node.stat_tile || {};
         const glyph = st.icon ? previewIconGlyph(st.icon) : '';
         const deltaCls = st.delta_positive === false ? 'neg' : 'pos';
-        return `
+        return wrapBoxOverlay(`
           <div class="kmp-stat-tile ${loopCls}" style="${weight}">
             <div class="kmp-stat-head">
               <span class="kmp-h-sub">${esc(st.label || '')}</span>
@@ -1076,34 +1213,34 @@
             <div class="kmp-stat-val">${esc(st.value || '')}</div>
             ${st.delta_label ? `<span class="kmp-stat-delta ${deltaCls}">${esc(st.delta_label)}</span>` : ''}
             ${st.caption ? `<div class="kmp-h-sub">${esc(st.caption)}</div>` : ''}
-          </div>`;
+          </div>`);
       }
 
       case 'key_value_row': {
         const kv = node.key_value_row || {};
         const valColorCls = mapValueColorClass(kv.value_color);
-        return `
+        return wrapBoxOverlay(`
           <div class="kmp-kv-row ${kv.show_divider ? 'has-divider' : ''} ${loopCls}" style="${weight}">
             <div class="kmp-kv-left">
               <span class="kmp-kv-label">${esc(kv.label || '')}</span>
               ${kv.sublabel ? `<span class="kmp-h-sub">${esc(kv.sublabel)}</span>` : ''}
             </div>
             <span class="kmp-kv-val ${kv.emphasized ? 'emphasized' : ''} ${valColorCls}">${esc(kv.value || '')}</span>
-          </div>`;
+          </div>`);
       }
 
       case 'qr_code': {
         const qr = node.qr_code || {};
-        return `
+        return wrapBoxOverlay(`
           <div class="kmp-qr-code ${loopCls}">
             <div class="kmp-qr-frame">${renderQrSvg(qr.payload, qr.size_dp)}</div>
             ${qr.label ? `<div class="kmp-qr-label mono">${esc(qr.label)}</div>` : ''}
             ${qr.caption ? `<div class="kmp-h-sub">${esc(qr.caption)}</div>` : ''}
-          </div>`;
+          </div>`);
       }
 
       default:
-        return `<span class="mini-chip">${esc(kind || 'node')}</span>`;
+        return wrapBoxOverlay(`<span class="mini-chip">${esc(kind || 'node')}</span>`);
     }
   }
 
@@ -1585,6 +1722,14 @@
         <div class="kmp-toolbar-actions"><span class="kmp-icon-pill">v1</span></div>
       </div>` : '';
 
+    const renderEnvelopeItem = (env) => {
+      const inner = renderSnippet(env);
+      if (env && env.sticky) {
+        return `<div class="kmp-sticky-wrap" data-sticky="1">${inner}</div>`;
+      }
+      return inner;
+    };
+
     const snippets = page.snippets || [];
     const splitEnabled = state.device === 'desktop' && page.adaptive_layout?.split_pane_enabled;
     const secondarySet = new Set(page.adaptive_layout?.secondary_snippet_ids || []);
@@ -1594,11 +1739,11 @@
       const secondary = snippets.filter((s) => secondarySet.has(s.snippet_id));
       bodyHtml = `
         <div class="kmp-split-pane">
-          <div class="kmp-pane-col">${primary.map(renderSnippet).join('')}</div>
-          <div class="kmp-pane-col kmp-pane-secondary">${secondary.map(renderSnippet).join('')}</div>
+          <div class="kmp-pane-col">${primary.map(renderEnvelopeItem).join('')}</div>
+          <div class="kmp-pane-col kmp-pane-secondary">${secondary.map(renderEnvelopeItem).join('')}</div>
         </div>`;
     } else {
-      bodyHtml = snippets.map(renderSnippet).join('');
+      bodyHtml = snippets.map(renderEnvelopeItem).join('');
     }
 
     const { totalItems, totalCents } = collectCartSummary(snippets);

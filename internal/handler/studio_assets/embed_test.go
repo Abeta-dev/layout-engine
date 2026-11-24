@@ -83,18 +83,28 @@ func TestEmbeddedStudioAssets_All21SnippetTypes(t *testing.T) {
 		".kmp-stat-tile",
 		".kmp-kv-row",
 		".kmp-qr-code",
+		".kmp-composed-scroll-row",
+		".kmp-composed-grid",
+		".kmp-composed-textfield",
+		".kmp-composed-switch",
+		".kmp-composed-checkbox",
+		".kmp-composed-slider",
+		".kmp-media-pager",
+		".kmp-sticky-wrap",
 	} {
 		if !strings.Contains(css, selector) {
 			t.Errorf("app.css missing preview style %q", selector)
 		}
 	}
 
-	all29ComposedKinds := []string{
+	all36ComposedKinds := []string{
 		snippets.ComposedNodeColumn,
 		snippets.ComposedNodeRow,
 		snippets.ComposedNodeBox,
 		snippets.ComposedNodeCard,
 		snippets.ComposedNodeFlowRow,
+		snippets.ComposedNodeScrollRow,
+		snippets.ComposedNodeGrid,
 		snippets.ComposedNodeText,
 		snippets.ComposedNodeButton,
 		snippets.ComposedNodeTag,
@@ -119,13 +129,38 @@ func TestEmbeddedStudioAssets_All21SnippetTypes(t *testing.T) {
 		snippets.ComposedNodeStatTile,
 		snippets.ComposedNodeKeyValueRow,
 		snippets.ComposedNodeQrCode,
+		snippets.ComposedNodeTextField,
+		snippets.ComposedNodeSwitch,
+		snippets.ComposedNodeCheckbox,
+		snippets.ComposedNodeSlider,
+		snippets.ComposedNodeMediaPager,
 	}
-	for _, kind := range all29ComposedKinds {
+	for _, kind := range all36ComposedKinds {
 		if !strings.Contains(html, `value="`+kind+`"`) {
 			t.Errorf("index.html composed molder picker missing node kind %q", kind)
 		}
 		if !strings.Contains(js, `'`+kind+`'`) {
 			t.Errorf("app.js missing composed node kind %q", kind)
+		}
+	}
+
+	all9BoxAlignments := []string{
+		snippets.BoxAlignTopStart,
+		snippets.BoxAlignTopCenter,
+		snippets.BoxAlignTopEnd,
+		snippets.BoxAlignCenterStart,
+		snippets.BoxAlignCenter,
+		snippets.BoxAlignCenterEnd,
+		snippets.BoxAlignBottomStart,
+		snippets.BoxAlignBottomCenter,
+		snippets.BoxAlignBottomEnd,
+	}
+	for _, align := range all9BoxAlignments {
+		if !strings.Contains(js, `'`+align+`'`) {
+			t.Errorf("app.js missing box_alignment %q", align)
+		}
+		if !strings.Contains(css, ".kmp-box-align-"+align) {
+			t.Errorf("app.css missing box_alignment class .kmp-box-align-%s", align)
 		}
 	}
 }

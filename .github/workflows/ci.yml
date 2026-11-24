@@ -130,3 +130,47 @@ jobs:
 
       - name: Build Docker image
         run: docker build --tag abeta-layout-engine:ci .
+
+  ci-quality-gate:
+    name: CI Quality Gate
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - hygiene-and-security
+      - go-test-sqlite
+      - go-test-postgres
+      - docker-build
+    steps:
+      - name: Evaluate CI Quality Gate
+        run: |
+          echo "========================================================"
+          echo "🏁 Evaluating CI Quality Gate"
+          echo "   Event: ${{ github.event_name }}"
+          echo "========================================================"
+
+          FAILED=0
+
+          check_job() {
+            local name="$1"
+            local result="$2"
+            if [ "$result" != "success" ]; then
+              echo "❌ $name failed with result: $result" >&2
+              FAILED=1
+            else
+              echo "✅ $name: success"
+            fi
+          }
+
+          check_job "Brand Hygiene & Secret Scan" "${{ needs.hygiene-and-security.result }}"
+          check_job "Go 1.26.0 Format, Vet, Race & SQLite Tests" "${{ needs.go-test-sqlite.result }}"
+          check_job "Go 1.26.0 PostgreSQL 17 Integration Tests" "${{ needs.go-test-postgres.result }}"
+          check_job "Verify OCI Container Build" "${{ needs.docker-build.result }}"
+
+          if [ "$FAILED" -ne 0 ]; then
+            echo "❌ CI Quality Gate failed due to errors in upstream CI jobs." >&2
+            exit 1
+          fi
+
+          echo "========================================================"
+          echo "✅ All CI Quality Gates successfully satisfied!"
+          echo "========================================================"

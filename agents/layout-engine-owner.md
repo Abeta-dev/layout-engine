@@ -15,7 +15,7 @@ owned_paths:
   - "Makefile"
 allowed_dependencies:
   - "cmd/layout-engine -> internal/handler -> internal/usecase -> internal/engine -> internal/domain <- internal/infra"
-  - "github.com/abeta-dev/kmp/bff@v0.5.0 (pkg/sdui/{actions,atoms,snippets,theming})"
+  - "github.com/abeta-dev/kmp/bff@v0.6.0 (pkg/sdui/{actions,atoms,snippets,molecules,theming})"
   - "github.com/abeta-dev/go-libs@v0.4.0 (ginmw, apperror, health, logger, env, shutdown)"
   - "github.com/gin-gonic/gin, github.com/andybalholm/brotli, modernc.org/sqlite, github.com/jackc/pgx/v5"
 forbidden_dependencies:
@@ -31,7 +31,7 @@ verification_command: "./scripts/verify_all.sh"
 ## Ownership Scope
 - **Repository**: `github.com/abeta-dev/layout-engine` (`Abeta-dev/layout-engine`, Apache-2.0)
 - **Core Responsibilities**:
-  - Multi-tenant Dynamic SDUI Layout Engine (7 pre-seeded vertical workspaces: `abeta-fresh`, `abeta-bites`, `abeta-pulse`, `abeta-mart`, `abeta-spark`, `abeta-trade`, `abeta-pay`, each with 21 KMP snippet templates, 28 wire atoms / 30 UI atoms, 29 `ComposedNodeKind`s, curated widgets, targeting & slotting rules, and published dynamic pages).
+  - Multi-tenant Dynamic SDUI Layout Engine (7 pre-seeded vertical workspaces: `abeta-fresh`, `abeta-bites`, `abeta-pulse`, `abeta-mart`, `abeta-spark`, `abeta-trade`, `abeta-pay`, each with 21 KMP snippet templates, 29 wire atoms / 31 UI atoms, 36 `ComposedNodeKind`s, 9-position `box_alignment`, sticky snippets, deterministic `EnsureComponentIDs`, curated widgets, targeting & slotting rules, and published dynamic pages).
   - Deterministic targeting rule evaluator (platform, semver app versions, city/zone, segment, percentage rollouts, window class, dark mode, custom attributes) and UTC schedule windows.
   - Dynamic slotting engine (`insert`, `prepend`, `append`, `replace`) and v1 KMP `PageComposer`.
   - Authoring & governance lifecycle (`draft -> validate -> publish -> versions -> rollback -> fallback -> changelog`) and embedded Visual Layout Studio SPA (`GET /studio`).
@@ -40,8 +40,8 @@ verification_command: "./scripts/verify_all.sh"
 
 ## Non-Negotiable Architecture & PR Review Gates
 1. **Strict Clean Architecture**: `internal/domain` and `internal/engine` must pass `internal/domain/arch_test.go` with zero framework or database driver imports.
-2. **1:1 KMP Wire Parity**: Every emitted `PageResponse`, `SnippetEnvelope`, `ActionTrigger`, `FloatingCartSpec`, `AdaptivePageSpec`, and `ginmw.Envelope` must match `github.com/abeta-dev/kmp/bff@v0.5.0` verbatim (28 wire atoms, 21 snippet types, 29 `ComposedNodeKind`s, 18 action types).
+2. **1:1 KMP Wire Parity**: Every emitted `PageResponse`, `SnippetEnvelope`, `ActionTrigger`, `FloatingCartSpec`, `AdaptivePageSpec`, and `ginmw.Envelope` must match `github.com/abeta-dev/kmp/bff@v0.6.0` verbatim (29 wire atoms / 31 UI atoms, 21 snippet types, 36 `ComposedNodeKind`s, 9-position `box_alignment`, `Sticky`, `EnsureComponentIDs`, 18 action types).
 3. **Publish, Rollback & Fallback Safety**: No unvalidated draft may ever leak to runtime endpoints; publishing must store immutable snapshots with resolved widgets; runtime resolution errors must fail over cleanly to `FallbackLayout` with `X-Layout-Fallback: true`.
 4. **SQLite & PostgreSQL Parity**: Migrations in `migrations/sqlite/` and `migrations/postgres/` must remain synchronized, idempotent, and backed solely by parameterized SQL queries.
-5. **Security & CI Discipline**: Workflows must pin minimal `permissions:` and `concurrency:`, run SHA-256 verified MIT `gitleaks` CLI `v8.30.1`, enforce fail-closed `AUTH_REQUIRED`/`JWT_SECRET` config validation, and pass `./scripts/check_brand_hygiene.sh`.
+5. **Security & CI Discipline**: Workflows must pin minimal `permissions:` and `concurrency:`, run SHA-256 verified MIT `gitleaks` CLI `v8.30.1`, enforce fail-closed `AUTH_REQUIRED`/`JWT_SECRET` config validation, keep the unified `CI Quality Gate` (`ci-quality-gate`) aggregator job green, and pass `./scripts/check_brand_hygiene.sh`.
 6. **Quality Gate**: `gofmt -l .` empty, `go vet ./...` clean, `go test -count=1 -race -cover ./...` green, and `CGO_ENABLED=0 go build ./cmd/layout-engine` clean.

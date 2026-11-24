@@ -56,13 +56,27 @@ func TestLayoutValidator_NudgesAndComposedSnippets_Valid(t *testing.T) {
 		map[string]any{"kind": snippets.ComposedNodeStatTile},
 		map[string]any{"kind": snippets.ComposedNodeKeyValueRow},
 		map[string]any{"kind": snippets.ComposedNodeQrCode},
+		map[string]any{"kind": snippets.ComposedNodeTextField},
+		map[string]any{"kind": snippets.ComposedNodeSwitch},
+		map[string]any{"kind": snippets.ComposedNodeCheckbox},
+		map[string]any{"kind": snippets.ComposedNodeSlider},
+		map[string]any{"kind": snippets.ComposedNodeMediaPager},
 	}
 
-	if gotKinds := engine.SupportedComposedNodeKinds(); len(gotKinds) != 29 {
-		t.Fatalf("expected 29 supported composed node kinds, got %d (%v)", len(gotKinds), gotKinds)
+	if gotKinds := engine.SupportedComposedNodeKinds(); len(gotKinds) != 36 {
+		t.Fatalf("expected 36 supported composed node kinds, got %d (%v)", len(gotKinds), gotKinds)
 	}
-	if !engine.IsValidComposedNodeKind(snippets.ComposedNodeQrCode) || engine.IsValidComposedNodeKind("nonexistent_atom") {
+	if !engine.IsValidComposedNodeKind(snippets.ComposedNodeMediaPager) ||
+		!engine.IsValidComposedNodeKind(snippets.ComposedNodeScrollRow) ||
+		!engine.IsValidComposedNodeKind(snippets.ComposedNodeGrid) ||
+		engine.IsValidComposedNodeKind("nonexistent_atom") {
 		t.Fatal("IsValidComposedNodeKind returned unexpected results")
+	}
+	if gotAligns := engine.SupportedBoxAlignments(); len(gotAligns) != 9 {
+		t.Fatalf("expected 9 supported box_alignment values, got %d (%v)", len(gotAligns), gotAligns)
+	}
+	if !engine.IsValidBoxAlignment(snippets.BoxAlignTopStart) || engine.IsValidBoxAlignment("diagonal") {
+		t.Fatal("IsValidBoxAlignment returned unexpected results")
 	}
 
 	widgets := map[string]domain.Widget{
@@ -175,8 +189,24 @@ func TestLayoutValidator_NudgesAndComposedSnippets_Valid(t *testing.T) {
 							"kind": snippets.ComposedNodeColumn,
 							"children": []any{
 								map[string]any{"kind": snippets.ComposedNodeRow, "children": allLeafKinds[:6]},
-								map[string]any{"kind": snippets.ComposedNodeBox, "children": allLeafKinds[6:9]},
-								map[string]any{"kind": snippets.ComposedNodeFlowRow, "children": allLeafKinds[9:]},
+								map[string]any{
+									"kind": snippets.ComposedNodeBox,
+									"children": []any{
+										map[string]any{"kind": snippets.ComposedNodeImage, "box_alignment": snippets.BoxAlignCenter},
+										map[string]any{"kind": snippets.ComposedNodeTag, "box_alignment": snippets.BoxAlignTopStart},
+										map[string]any{"kind": snippets.ComposedNodeTag, "box_alignment": snippets.BoxAlignTopCenter},
+										map[string]any{"kind": snippets.ComposedNodeTag, "box_alignment": snippets.BoxAlignTopEnd},
+										map[string]any{"kind": snippets.ComposedNodeTag, "box_alignment": snippets.BoxAlignCenterStart},
+										map[string]any{"kind": snippets.ComposedNodeTag, "box_alignment": snippets.BoxAlignCenterEnd},
+										map[string]any{"kind": snippets.ComposedNodeTag, "box_alignment": snippets.BoxAlignBottomStart},
+										map[string]any{"kind": snippets.ComposedNodeTag, "box_alignment": snippets.BoxAlignBottomCenter},
+										map[string]any{"kind": snippets.ComposedNodeTag, "box_alignment": snippets.BoxAlignBottomEnd},
+										map[string]any{"kind": snippets.ComposedNodeText, "box_alignment": ""},
+									},
+								},
+								map[string]any{"kind": snippets.ComposedNodeFlowRow, "children": allLeafKinds[6:18]},
+								map[string]any{"kind": snippets.ComposedNodeScrollRow, "children": allLeafKinds[18:24]},
+								map[string]any{"kind": snippets.ComposedNodeGrid, "columns": 2, "children": allLeafKinds[24:]},
 							},
 						},
 					},
@@ -196,7 +226,13 @@ func TestLayoutValidator_NudgesAndComposedSnippets_Valid(t *testing.T) {
 			SnippetType: snippets.SnippetTypeComposedBlock,
 			Active:      true,
 			Props: map[string]any{
-				"root": snippets.VStack(8, snippets.TextNode(atoms.TextAtom{Text: "Hello"})),
+				"root": snippets.VStack(8,
+					snippets.BoxNode(
+						snippets.TextNode(atoms.TextAtom{Text: "Hello"}).WithBoxAlignment(snippets.BoxAlignTopStart),
+					),
+					snippets.ScrollRowNode(8, snippets.TextFieldNode(atoms.TextFieldAtom{FieldID: "q", Label: "Search"})),
+					snippets.GridNode(2, 8, snippets.MediaPagerNode(atoms.NewMediaPager("mp1", nil, 160))),
+				),
 			},
 		},
 	}
@@ -345,6 +381,30 @@ func TestLayoutValidator_NudgesAndComposedSnippets_Invalid(t *testing.T) {
 				"progress": json.Number("0.5"),
 			},
 		},
+		"w_composed_bad_box_align": {
+			ID:          "w_composed_bad_box_align",
+			SnippetType: snippets.SnippetTypeComposedBlock,
+			Active:      true,
+			Props: map[string]any{
+				"root": map[string]any{
+					"kind": snippets.ComposedNodeBox,
+					"children": []any{
+						map[string]any{"kind": snippets.ComposedNodeTag, "box_alignment": "diagonal_corner"},
+						map[string]any{"kind": snippets.ComposedNodeTag, "box_alignment": 42},
+					},
+				},
+			},
+		},
+		"w_composed_typed_bad_box_align": {
+			ID:          "w_composed_typed_bad_box_align",
+			SnippetType: snippets.SnippetTypeComposedBlock,
+			Active:      true,
+			Props: map[string]any{
+				"root": snippets.BoxNode(
+					snippets.TagNode(atoms.TagAtom{Label: "BAD"}).WithBoxAlignment("top_left"),
+				),
+			},
+		},
 	}
 
 	layout := domain.Layout{
@@ -364,6 +424,8 @@ func TestLayoutValidator_NudgesAndComposedSnippets_Invalid(t *testing.T) {
 			{SlotID: "s10", WidgetID: "w_composed_depth7_overflow", Position: 10, Enabled: true},
 			{SlotID: "s11", WidgetID: "w_composed_empty_kind", Position: 11, Enabled: true},
 			{SlotID: "s12", WidgetID: "w_nudge_json_number_ok", Position: 12, Enabled: true},
+			{SlotID: "s13", WidgetID: "w_composed_bad_box_align", Position: 13, Enabled: true},
+			{SlotID: "s14", WidgetID: "w_composed_typed_bad_box_align", Position: 14, Enabled: true},
 		},
 	}
 
@@ -393,7 +455,10 @@ func TestLayoutValidator_NudgesAndComposedSnippets_Invalid(t *testing.T) {
 		"/slots/9/props/root/kind":     "invalid_composed_node_kind",
 		"/slots/9/props/root/children": "invalid_composed_children",
 		"/slots/10/props/root/children/0/children/0/children/0/children/0/children/0/children/0/children/0": "max_depth_exceeded",
-		"/slots/11/props/root/kind": "required",
+		"/slots/11/props/root/kind":                     "required",
+		"/slots/13/props/root/children/0/box_alignment": "invalid_box_alignment",
+		"/slots/13/props/root/children/1/box_alignment": "invalid_box_alignment",
+		"/slots/14/props/root/children/0/box_alignment": "invalid_box_alignment",
 	}
 
 	for path, wantCode := range wantPathCodes {

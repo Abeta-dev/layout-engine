@@ -6,6 +6,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [0.4.0] - 2026-11-24
+
+### Changed
+- **Wire Protocol Upgrade (`github.com/abeta-dev/kmp/bff@v0.6.0`)**:
+  - Upgraded dependency from `kmp/bff@v0.5.0` to `kmp/bff@v0.6.0`, delivering full parity across all **29 Wire Atoms / 31 UI Atoms** (adding `MediaPagerAtom`), **21 KMP `v1` `SnippetTypes`**, **36 `ComposedNodeKind`s**, per-child 9-position `box_alignment`, `SnippetEnvelope.Sticky`, `ComposedNode.Tracking`/`ClickTracking`, deterministic `snippets.EnsureComponentIDs`, and **18 `ActionTypes`**.
+
+### Added
+- **36 `ComposedNodeKind`s, `box_alignment`, `Sticky`, and Deterministic Component IDs (`internal/domain`, `internal/engine`, `pkg/transformer`)**:
+  - Extended `validComposedNodeKinds` in `internal/engine/validator_interactive.go` from 29 to **36** (`scroll_row`, `grid`, `text_field`, `switch`, `checkbox`, `slider`, `media_pager`) and added strict 9-position `box_alignment` validation (`top_start`, `top_center`, `top_end`, `center_start`, `center`, `center_end`, `bottom_start`, `bottom_center`, `bottom_end`) plus exported `IsValidBoxAlignment` and `SupportedBoxAlignments`.
+  - Updated `pkg/transformer/nudge_transformers.go` (`isComposedContainerKind` including `scroll_row` and `grid` for non-nil `Children`, shorthand/nested promotions for `text_field`, `switch`, `checkbox`, and `media_pager.items`), propagated `SnippetEnvelope.Sticky` from `widget.Props["sticky"]`, `LayoutSlot.Sticky`, and `LayoutSlot.Overrides["sticky"]`, and invoked **`snippets.EnsureComponentIDs(&page)`** in `PageComposer.Compose` so every composed page guarantees deterministic component & action IDs.
+  - Extended unit test coverage in `internal/engine/validator_nudges_test.go` and `pkg/transformer/nudge_transformers_test.go`.
+- **Express Molecules & Sticky Search Bar Seeding (`internal/infra/persistence`)**:
+  - Updated `tmpl_composed_block` schema metadata in `seed_templates.go` with all **36 `composed_node_kinds`** and **9 `box_alignments`**.
+  - Added `w_fresh_express_upsell` in `seed_widgets_nudges.go` molded via `github.com/abeta-dev/kmp/bff/pkg/sdui/molecules.ImpulseUpsellRail` (`ExpressProductTile` cards inside a horizontal `scroll_row` with `box_alignment` badges and node tracking) and marked `w_fresh_search_bar` / `slot_fresh_search` as `sticky: true` on `abeta-fresh/fresh-home`.
+- **Visual Layout Studio & OpenAPI 3.1 (`internal/handler`)**:
+  - Upgraded `studio_assets/{app.js,index.html,app.css}` and `embed_test.go` to render all **36 `ComposedNodeKind`s** (adding `scroll_row`, responsive `grid`, `text_field`, `switch`, `checkbox`, `slider`, `media_pager`), 9-position `box_alignment` overlays, and CSS sticky wrappers for `SnippetEnvelope.Sticky`, and expanded the Atomic Snippet Molder picker (`#wf-composed-molder-bar`) to all 36 kinds.
+  - Updated `/openapi.json` to `0.4.0`.
+- **Unified `CI Quality Gate` (`.github/workflows/ci.yml`)**:
+  - Added the final `ci-quality-gate` job (`name: CI Quality Gate`, `if: always()`, `needs: [hygiene-and-security, go-test-sqlite, go-test-postgres, docker-build]`) matching `Abeta-dev/go-libs` 1:1 for single-check branch protection.
+- **Documentation**:
+  - Updated `README.md`, `CHANGELOG.md`, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `CONTRIBUTING.md`, `llms.txt`, `llms-full.txt`, `docs/*.md`, `skills/abeta-layout-engine/SKILL.md`, and `agents/layout-engine-owner.md` to `v0.4.0` / `kmp/bff@v0.6.0`.
+
 ## [0.3.0] - 2026-11-23
 
 ### Changed

@@ -20,6 +20,8 @@ var validComposedNodeKinds = map[string]struct{}{
 	snippets.ComposedNodeBox:              {},
 	snippets.ComposedNodeCard:             {},
 	snippets.ComposedNodeFlowRow:          {},
+	snippets.ComposedNodeScrollRow:        {},
+	snippets.ComposedNodeGrid:             {},
 	snippets.ComposedNodeText:             {},
 	snippets.ComposedNodeButton:           {},
 	snippets.ComposedNodeTag:              {},
@@ -44,18 +46,51 @@ var validComposedNodeKinds = map[string]struct{}{
 	snippets.ComposedNodeStatTile:         {},
 	snippets.ComposedNodeKeyValueRow:      {},
 	snippets.ComposedNodeQrCode:           {},
+	snippets.ComposedNodeTextField:        {},
+	snippets.ComposedNodeSwitch:           {},
+	snippets.ComposedNodeCheckbox:         {},
+	snippets.ComposedNodeSlider:           {},
+	snippets.ComposedNodeMediaPager:       {},
 }
 
-// IsValidComposedNodeKind returns true if kind is one of the 29 canonical KMP v1 ComposedNodeKinds.
+var validBoxAlignments = map[string]struct{}{
+	snippets.BoxAlignTopStart:     {},
+	snippets.BoxAlignTopCenter:    {},
+	snippets.BoxAlignTopEnd:       {},
+	snippets.BoxAlignCenterStart:  {},
+	snippets.BoxAlignCenter:       {},
+	snippets.BoxAlignCenterEnd:    {},
+	snippets.BoxAlignBottomStart:  {},
+	snippets.BoxAlignBottomCenter: {},
+	snippets.BoxAlignBottomEnd:    {},
+}
+
+// IsValidComposedNodeKind returns true if kind is one of the 36 canonical KMP v1 ComposedNodeKinds.
 func IsValidComposedNodeKind(kind string) bool {
 	_, ok := validComposedNodeKinds[strings.TrimSpace(kind)]
 	return ok
 }
 
-// SupportedComposedNodeKinds returns a deterministic, sorted copy of all 29 KMP v1 ComposedNodeKinds.
+// SupportedComposedNodeKinds returns a deterministic, sorted copy of all 36 KMP v1 ComposedNodeKinds.
 func SupportedComposedNodeKinds() []string {
 	out := make([]string, 0, len(validComposedNodeKinds))
 	for k := range validComposedNodeKinds {
+		out = append(out, k)
+	}
+	slices.Sort(out)
+	return out
+}
+
+// IsValidBoxAlignment returns true if alignment is one of the 9 canonical KMP v1 BoxAlign values.
+func IsValidBoxAlignment(alignment string) bool {
+	_, ok := validBoxAlignments[strings.TrimSpace(alignment)]
+	return ok
+}
+
+// SupportedBoxAlignments returns a deterministic, sorted copy of all 9 KMP v1 BoxAlign values.
+func SupportedBoxAlignments() []string {
+	out := make([]string, 0, len(validBoxAlignments))
+	for k := range validBoxAlignments {
 		out = append(out, k)
 	}
 	slices.Sort(out)
@@ -446,6 +481,7 @@ func (v *DefaultLayoutValidator) validateComposedNode(
 	switch node := raw.(type) {
 	case snippets.ComposedNode:
 		validateComposedNodeKind(path, node.Kind, issues)
+		validateBoxAlignment(path, node.BoxAlignment, issues)
 		for i, ch := range node.Children {
 			v.validateComposedNode(fmt.Sprintf("%s/children/%d", path, i), ch, depth+1, issues)
 		}
@@ -459,12 +495,24 @@ func (v *DefaultLayoutValidator) validateComposedNode(
 			return
 		}
 		validateComposedNodeKind(path, node.Kind, issues)
+		validateBoxAlignment(path, node.BoxAlignment, issues)
 		for i, ch := range node.Children {
 			v.validateComposedNode(fmt.Sprintf("%s/children/%d", path, i), ch, depth+1, issues)
 		}
 	case map[string]any:
 		kind, _ := node["kind"].(string)
 		validateComposedNodeKind(path, kind, issues)
+		if rawAlign, hasAlign := node["box_alignment"]; hasAlign && rawAlign != nil {
+			if alignStr, ok := rawAlign.(string); ok {
+				validateBoxAlignment(path, alignStr, issues)
+			} else {
+				*issues = append(*issues, domain.ValidationIssue{
+					Path:    path + "/box_alignment",
+					Code:    "invalid_box_alignment",
+					Message: "composed_block box_alignment must be a string",
+				})
+			}
+		}
 		rawChildren, exists := node["children"]
 		if !exists || rawChildren == nil {
 			return
@@ -514,6 +562,20 @@ func validateComposedNodeKind(path, kind string, issues *[]domain.ValidationIssu
 			Path:    path + "/kind",
 			Code:    "invalid_composed_node_kind",
 			Message: fmt.Sprintf("unsupported composed_block node kind %q", kind),
+		})
+	}
+}
+
+func validateBoxAlignment(path, alignment string, issues *[]domain.ValidationIssue) {
+	trimmed := strings.TrimSpace(alignment)
+	if trimmed == "" {
+		return
+	}
+	if _, ok := validBoxAlignments[trimmed]; !ok {
+		*issues = append(*issues, domain.ValidationIssue{
+			Path:    path + "/box_alignment",
+			Code:    "invalid_box_alignment",
+			Message: fmt.Sprintf("unsupported composed_block box_alignment %q", alignment),
 		})
 	}
 }

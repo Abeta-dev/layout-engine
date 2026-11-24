@@ -28,7 +28,7 @@ Every pull request MUST preserve these invariants:
    - Dependencies flow strictly inward: `cmd/layout-engine` -> `internal/handler` -> `internal/usecase` -> `internal/engine` -> `internal/domain` <- `internal/infra`.
    - `internal/domain` and `internal/engine` MUST NEVER import `gin`, `net/http`, `database/sql`, `modernc.org/sqlite`, `pgx`, `internal/infra`, or `internal/handler`. See [docs/architecture.md](docs/architecture.md).
 2. **1:1 `abeta-dev/kmp` Wire Protocol Compatibility**:
-   - Consume v1 SDUI types directly from `github.com/abeta-dev/kmp/bff@v0.5.0` (`pkg/sdui/{actions,atoms,snippets,theming}`).
+   - Consume v1 SDUI types directly from `github.com/abeta-dev/kmp/bff@v0.6.0` (`pkg/sdui/{actions,atoms,snippets,molecules,theming}`).
    - Wrap `/api/v1/*` HTTP responses in `github.com/abeta-dev/go-libs@v0.4.0` `ginmw.Envelope` responses. See [docs/kmp-integration.md](docs/kmp-integration.md).
 3. **Immutable Snapshots, Validation & Fallback Safety**:
    - Runtime serving MUST read validated `PublishedSnapshot` records with automatic failover to `FallbackLayout`.

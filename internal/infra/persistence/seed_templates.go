@@ -371,7 +371,7 @@ func seedTemplates(tenantID, idPrefix string, now time.Time) []domain.WidgetTemp
 			key:         "tmpl_composed_block",
 			name:        "Atomic Composed Block (Molding Engine)",
 			snippetType: snippets.SnippetTypeComposedBlock,
-			desc:        "Server-molded recursive atomic tree (29 ComposedNodeKinds, depth <= 6) combining 5 layout containers and 24 wire atoms (incl. radio_group, select, otp_input, chip, segmented_control, rating, price, badge, alert_banner, stat_tile, key_value_row, qr_code) without client app releases.",
+			desc:        "Server-molded recursive atomic tree (36 ComposedNodeKinds, 9-position box_alignment, depth <= 6) combining 7 layout containers (incl. scroll_row, grid) and 29 wire atoms (incl. text_field, switch, checkbox, slider, media_pager, radio_group, select, otp_input, chip, segmented_control, rating, price, badge, alert_banner, stat_tile, key_value_row, qr_code) without client app releases.",
 			props:       sampleComposedEnv.Data,
 			tags:        []string{"composed", "atomic", "molding"},
 		},
@@ -383,6 +383,8 @@ func seedTemplates(tenantID, idPrefix string, now time.Time) []domain.WidgetTemp
 		snippets.ComposedNodeBox,
 		snippets.ComposedNodeCard,
 		snippets.ComposedNodeFlowRow,
+		snippets.ComposedNodeScrollRow,
+		snippets.ComposedNodeGrid,
 		snippets.ComposedNodeText,
 		snippets.ComposedNodeButton,
 		snippets.ComposedNodeTag,
@@ -407,6 +409,23 @@ func seedTemplates(tenantID, idPrefix string, now time.Time) []domain.WidgetTemp
 		snippets.ComposedNodeStatTile,
 		snippets.ComposedNodeKeyValueRow,
 		snippets.ComposedNodeQrCode,
+		snippets.ComposedNodeTextField,
+		snippets.ComposedNodeSwitch,
+		snippets.ComposedNodeCheckbox,
+		snippets.ComposedNodeSlider,
+		snippets.ComposedNodeMediaPager,
+	}
+
+	allBoxAlignments := []string{
+		snippets.BoxAlignTopStart,
+		snippets.BoxAlignTopCenter,
+		snippets.BoxAlignTopEnd,
+		snippets.BoxAlignCenterStart,
+		snippets.BoxAlignCenter,
+		snippets.BoxAlignCenterEnd,
+		snippets.BoxAlignBottomStart,
+		snippets.BoxAlignBottomCenter,
+		snippets.BoxAlignBottomEnd,
 	}
 
 	out := make([]domain.WidgetTemplate, 0, len(specs))
@@ -422,6 +441,7 @@ func seedTemplates(tenantID, idPrefix string, now time.Time) []domain.WidgetTemp
 		if sp.snippetType == snippets.SnippetTypeComposedBlock {
 			schema["max_depth"] = 6
 			schema["composed_node_kinds"] = allComposedNodeKinds
+			schema["box_alignments"] = allBoxAlignments
 		}
 		out = append(out, domain.WidgetTemplate{
 			ID:           id,

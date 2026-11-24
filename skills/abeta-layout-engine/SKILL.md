@@ -1,6 +1,6 @@
 ---
 name: abeta-layout-engine
-description: Develop, test, and operate the Abeta Dynamic SDUI Layout Engine (github.com/abeta-dev/layout-engine v0.3.0, Go 1.26.0 Clean Architecture) consuming github.com/abeta-dev/kmp/bff@v0.5.0 and github.com/abeta-dev/go-libs@v0.4.0. Use when modifying domain entities, rule/slotting engines, Studio authoring APIs, embedded Visual Studio SPA, SQLite/Postgres persistence, or CI/CD workflows.
+description: Develop, test, and operate the Abeta Dynamic SDUI Layout Engine (github.com/abeta-dev/layout-engine v0.4.0, Go 1.26.0 Clean Architecture) consuming github.com/abeta-dev/kmp/bff@v0.6.0 and github.com/abeta-dev/go-libs@v0.4.0. Use when modifying domain entities, rule/slotting engines, Studio authoring APIs, embedded Visual Studio SPA, SQLite/Postgres persistence, or CI/CD workflows.
 ---
 
 # Abeta Dynamic Layout Engine (`abeta-dev/layout-engine`)
@@ -25,7 +25,7 @@ layout-engine/
 │   └── postgres/            # PostgreSQL DDL migrations (0001_initial_schema.sql, embedded)
 ├── scripts/                 # check_brand_hygiene.sh, verify_all.sh
 ├── docs/                    # architecture.md, studio-and-rules.md, kmp-integration.md
-└── .github/workflows/       # ci.yml (hygiene, gitleaks CLI, SQLite + Postgres tests, Docker build), release.yml (cross-platform binaries + multi-arch GHCR)
+└── .github/workflows/       # ci.yml (hygiene, gitleaks CLI, SQLite + Postgres tests, Docker build, unified CI Quality Gate), release.yml (cross-platform binaries + multi-arch GHCR)
 ```
 
 ### Dependency Rule Enforcement
@@ -37,8 +37,8 @@ layout-engine/
 ## 2. Wire Contract & Companion Kit Rules
 
 1. **Reuse `abeta-dev/kmp/bff` Types Directly**:
-   - Import `github.com/abeta-dev/kmp/bff/pkg/sdui/{actions,atoms,snippets,theming}` (`v0.5.0`) rather than redefining wire structs.
-   - Maintain full compatibility with all **21 KMP SnippetTypes** (`header_v1`, `banner_v1`, `metric_card`, `card_v1`, `action_row`, `form_v1`, `empty_state`, `divider`, `spacer`, `carousel`, `grid`, `tabs`, `accordion`, `product_card`, `search_bar`, `chip_group`, `swipe_deck`, `nudge_bar`, `marquee_strip`, `order_tracker`, `composed_block`), **28 Wire Atoms / 30 UI Atoms**, **29 `ComposedNodeKind`s** (`maxDepth <= 6`), and **18 ActionTypes**.
+   - Import `github.com/abeta-dev/kmp/bff/pkg/sdui/{actions,atoms,snippets,molecules,theming}` (`v0.6.0`) rather than redefining wire structs.
+   - Maintain full compatibility with all **21 KMP SnippetTypes** (`header_v1`, `banner_v1`, `metric_card`, `card_v1`, `action_row`, `form_v1`, `empty_state`, `divider`, `spacer`, `carousel`, `grid`, `tabs`, `accordion`, `product_card`, `search_bar`, `chip_group`, `swipe_deck`, `nudge_bar`, `marquee_strip`, `order_tracker`, `composed_block`), **29 Wire Atoms / 31 UI Atoms** (incl. `MediaPagerAtom`), **36 `ComposedNodeKind`s** (`maxDepth <= 6`, 9-position `box_alignment`, `ComposedNode.Tracking`/`ClickTracking`), `SnippetEnvelope.Sticky`, deterministic `snippets.EnsureComponentIDs`, and **18 ActionTypes**.
 2. **Envelope & Drop-In KMP BFF Compatibility**:
    - Wrap all `/api/v1/*` JSON responses in `github.com/abeta-dev/go-libs/ginmw` envelopes (`ginmw.RespondSuccess` / `ginmw.RespondError`).
    - Preserve drop-in compatibility for `abeta-dev/kmp` clients pointed at `--bff-url=http://localhost:8090` (`GET /api/v1/screens`, `GET /api/v1/screens/:screenId`, `GET /api/v1/pages/:slug`, `GET /api/v1/config/splash`, `GET /api/v1/catalog/tokens`, `POST /api/v1/actions/execute`, `POST /api/v1/orders/express`).

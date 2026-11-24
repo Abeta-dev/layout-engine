@@ -343,7 +343,18 @@ func TestV030SnippetsEndToEndResolutionAndValidation(t *testing.T) {
 		t.Fatalf("expected fresh-home free_delivery_threshold_cents=1500, got %+v", freshRes.Page.FloatingCart)
 	}
 	rawFresh, _ := json.Marshal(freshRes.Page)
-	for _, needle := range []string{`"marquee_strip"`, `"nudge_bar"`, `"composed_block"`, `"loyalty_stamp_card"`, `Mumbai`} {
+	for _, needle := range []string{
+		`"marquee_strip"`,
+		`"nudge_bar"`,
+		`"composed_block"`,
+		`"loyalty_stamp_card"`,
+		`"express_impulse_upsell_rail"`,
+		`"scroll_row"`,
+		`"box_alignment"`,
+		`"sticky":true`,
+		`"node_id"`,
+		`Mumbai`,
+	} {
 		if !strings.Contains(string(rawFresh), needle) {
 			t.Errorf("fresh-home payload missing %s", needle)
 		}

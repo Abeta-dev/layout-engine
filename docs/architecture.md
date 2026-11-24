@@ -1,6 +1,6 @@
 # Architecture — Abeta Dynamic Layout Engine
 
-**Abeta Dynamic Layout Engine (`github.com/abeta-dev/layout-engine`, `v0.3.0`)** is a Go `1.26.0` Server-Driven UI (SDUI) control plane and runtime page resolver designed around **Clean Architecture**, the **Uncle Bob Dependency Rule**, and **1:1 wire compatibility** with [`abeta-dev/kmp`](https://github.com/Abeta-dev/kmp) (`github.com/abeta-dev/kmp/bff@v0.5.0`) and [`abeta-dev/go-libs`](https://github.com/Abeta-dev/go-libs) (`v0.4.0`).
+**Abeta Dynamic Layout Engine (`github.com/abeta-dev/layout-engine`, `v0.4.0`)** is a Go `1.26.0` Server-Driven UI (SDUI) control plane and runtime page resolver designed around **Clean Architecture**, the **Uncle Bob Dependency Rule**, and **1:1 wire compatibility** with [`abeta-dev/kmp`](https://github.com/Abeta-dev/kmp) (`github.com/abeta-dev/kmp/bff@v0.6.0`) and [`abeta-dev/go-libs`](https://github.com/Abeta-dev/go-libs) (`v0.4.0`).
 
 ---
 
@@ -46,9 +46,9 @@ flowchart LR
 | :--- | :--- |
 | `cmd/layout-engine` | Application entrypoint loading env config via `go-libs/env`, opening SQLite or PostgreSQL, running auto-migrations and idempotent 7-vertical starter seeding (`abeta-fresh`, `abeta-bites`, `abeta-pulse`, `abeta-mart`, `abeta-spark`, `abeta-trade`, `abeta-pay`), serving HTTP/1.1 + `h2c` + TLS HTTP/2, and coordinating graceful shutdown via `go-libs/shutdown`. |
 | `internal/domain` | Pure business models (`Tenant`, `WidgetTemplate`, `Widget`, `TargetingRule`, `ScheduleWindow`, `Layout`, `LayoutSlot`, `LayoutPageConfig`, `SlottingRule`, `PublishedSnapshot`, `FallbackLayout`, `SplashConfig`, `TokenOverride`, `ChangeLogEntry`, `DiffItem`, `RequestContext`, `ResolutionTrace`, `ResolvedPageResult`, `ValidationIssue`), sentinel errors, and all storage/engine interfaces (`Store`, `RuleEvaluator`, `SlottingEngine`, `PageComposer`, `LayoutValidator`). |
-| `internal/engine` | Pure deterministic domain engines: `DefaultRuleEvaluator` (13 operators + UTC `ScheduleWindow`), `DefaultSlottingEngine` (`insert`/`prepend`/`append`/`replace` with priority & pinned-slot protection), `DefaultLayoutValidator` (all 21 KMP snippet types, 29 `ComposedNodeKind`s with `maxDepth <= 6`, and recursive container cycle detection), and JSON `DiffEngine`. |
+| `internal/engine` | Pure deterministic domain engines: `DefaultRuleEvaluator` (13 operators + UTC `ScheduleWindow`), `DefaultSlottingEngine` (`insert`/`prepend`/`append`/`replace` with priority & pinned-slot protection), `DefaultLayoutValidator` (all 21 KMP snippet types, 36 `ComposedNodeKind`s with 9-position `box_alignment` & `maxDepth <= 6`, and recursive container cycle detection), and JSON `DiffEngine`. |
 | `internal/usecase` | Application orchestration: `ResolveService` (published snapshot resolution, Studio draft preview, splash & token resolution, fallback failover), `StudioService` (CRUD, validation, immutable snapshot publishing, historical rollback, fallback promotion, audit diff recording), and `ActionService` (all 18 KMP `v1` action types + express order follow-ups). |
-| `internal/handler` | Gin HTTP delivery layer: runtime KMP-compatible endpoints, Studio authoring/governance API, embedded zero-build Visual Layout Studio SPA (`internal/handler/studio_assets/` with 21 snippet renderers & 29-kind Atomic Snippet Molder), OpenAPI 3.1 + Scalar docs (`/openapi.json`, `/docs`), `/llms.txt` & `/llms-full.txt`, Brotli/gzip compression, SHA-256 `ETag`/`304`, and `go-libs/ginmw` middlewares. |
+| `internal/handler` | Gin HTTP delivery layer: runtime KMP-compatible endpoints, Studio authoring/governance API, embedded zero-build Visual Layout Studio SPA (`internal/handler/studio_assets/` with 21 snippet renderers, sticky snippet headers, 9-position `box_alignment` overlays & 36-kind Atomic Snippet Molder), OpenAPI 3.1 + Scalar docs (`/openapi.json`, `/docs`), `/llms.txt` & `/llms-full.txt`, Brotli/gzip compression, SHA-256 `ETag`/`304`, and `go-libs/ginmw` middlewares. |
 | `internal/infra/persistence` | Unified `SQLStore` implementing `domain.Store` across pure-Go SQLite (`modernc.org/sqlite`) and PostgreSQL (`github.com/jackc/pgx/v5/stdlib`), plus embedded migration runner (`migrations/{sqlite,postgres}`) and 7-vertical seeder. |
 
 ---
@@ -60,7 +60,7 @@ flowchart LR
 | Port Interface | Core Entity | Purpose |
 | :--- | :--- | :--- |
 | `TenantStore` | `Tenant` | Isolates workspaces per brand/app (`slug`, `active`). Default workspace: `abeta-fresh`. |
-| `TemplateStore` | `WidgetTemplate` | Reusable blueprints mapping 1:1 to all 21 KMP `v1` `SnippetTypes` (28 wire atoms, 29 `ComposedNodeKind`s). |
+| `TemplateStore` | `WidgetTemplate` | Reusable blueprints mapping 1:1 to all 21 KMP `v1` `SnippetTypes` (29 wire atoms / 31 UI atoms, 36 `ComposedNodeKind`s, 9-position `box_alignment`). |
 | `WidgetStore` | `Widget` | Configured reusable UI/commerce/container components with `props`, `tracking`, and `motion`. |
 | `LayoutStore` | `Layout` | Editable draft page definitions holding `LayoutPageConfig` (toolbar, bottom bar, floating cart, adaptive split-pane, pagination, pull-to-refresh) and ordered `[]LayoutSlot`. |
 | `RuleStore` | `TargetingRule` | Reusable targeting predicates (`match_mode`, `conditions`, optional `ScheduleWindow`, `priority`). |
@@ -85,7 +85,7 @@ flowchart TD
     FALLBACK["Automatic Fallback Chain\nServe pre-validated FallbackLayout\nSet X-Layout-Fallback: true"]
     SLOT_FILTER["3. Evaluate Base Slot Rules & UTC ScheduleWindows\nRecord matched_rule_ids & skipped_slot_ids"]
     SLOTTING["4. Apply Dynamic SlottingEngine\nPriority DESC -> insert/prepend/append/replace\nRespect Pinned slots & deduplicate WidgetIDs"]
-    COMPOSE["5. Compose v1 KMP PageResponse\nResolve widgets, container children & overrides"]
+    COMPOSE["5. Compose v1 KMP PageResponse\nResolve widgets, sticky envelopes, container children & overrides\nInvoke snippets.EnsureComponentIDs(&page)"]
     COMP_OK{"Composition\nsucceeded?"}
     RESP["6. Emit Response\nginmw.Envelope + X-Layout-Version\nOptional ResolutionTrace (?include_trace=true)\nSHA-256 ETag + Brotli/Gzip"]
 
@@ -125,6 +125,7 @@ flowchart TD
 - **Probes & Telemetry**: `GET /healthz` (liveness), `GET /readyz` (database ping readiness), and `GET /metrics` (Gin metrics tracker via `go-libs/ginmw`).
 - **API Documentation**: Live OpenAPI 3.1 JSON at `GET /openapi.json` and interactive Scalar reference UI at `GET /docs`.
 - **Optional Production Guards**: `RATE_LIMIT_ENABLED=true` enables `ginmw.GlobalRateLimit()`, and `AUTH_REQUIRED=true` enables fail-closed `ginmw.AuthMiddleware()` (startup fails immediately if `JWT_SECRET` is empty). See [../.env.example](../.env.example) and [../docker-compose.yaml](../docker-compose.yaml).
+- **CI Quality Gate**: `.github/workflows/ci.yml` runs Brand Hygiene & Secret Scan (`gitleaks` CLI `v8.30.1`), SQLite & PostgreSQL 17 race-enabled test suites, and OCI Docker build, converging into the unified **`CI Quality Gate`** (`ci-quality-gate`) aggregator job for single-check branch protection.
 
 ---
 

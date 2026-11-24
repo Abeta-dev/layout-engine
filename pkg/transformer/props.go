@@ -248,6 +248,50 @@ func promoteTagSliceField(props map[string]any, key string) {
 	}
 }
 
+func promoteImageSliceField(props map[string]any, key string) {
+	raw, exists := props[key]
+	if !exists || raw == nil {
+		return
+	}
+	switch list := raw.(type) {
+	case []string:
+		out := make([]any, len(list))
+		for i, s := range list {
+			out[i] = map[string]any{"url": s}
+		}
+		props[key] = out
+	case []any:
+		out := make([]any, len(list))
+		for i, elem := range list {
+			if s, ok := elem.(string); ok {
+				out[i] = map[string]any{"url": s}
+			} else {
+				out[i] = elem
+			}
+		}
+		props[key] = out
+	}
+}
+
+func resolveSticky(input TransformInput) bool {
+	if input.Slot.Overrides != nil {
+		if raw, exists := input.Slot.Overrides["sticky"]; exists {
+			if b, ok := raw.(bool); ok {
+				return b
+			}
+		}
+	}
+	if input.Slot.Sticky {
+		return true
+	}
+	if input.Props != nil {
+		if b, ok := input.Props["sticky"].(bool); ok {
+			return b
+		}
+	}
+	return false
+}
+
 func extractTabTitle(v any) string {
 	switch val := v.(type) {
 	case string:

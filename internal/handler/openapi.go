@@ -26,8 +26,8 @@ func registerOpenAPIRoutes(engine *gin.Engine, serviceName string) {
 		"openapi": "3.1.0",
 		"info": map[string]any{
 			"title":       "Abeta Dynamic Layout Engine API",
-			"version":     "0.3.0",
-			"description": "Multi-tenant Server-Driven UI (SDUI) Layout Engine emitting v1 abeta-dev/kmp (bff@v0.5.0) PageResponse contracts across 7 vertical workspaces (abeta-fresh, abeta-bites, abeta-pulse, abeta-mart, abeta-spark, abeta-trade, abeta-pay), 28 wire atoms / 30 UI atoms, 21 snippet types, 29 ComposedNodeKinds (Atomic Snippet Molding Engine), 18 action types, rule targeting, UTC schedules, dynamic slotting, immutable snapshots, rollback, fallback protection, and embedded Visual Layout Studio (/studio).",
+			"version":     "0.4.0",
+			"description": "Multi-tenant Server-Driven UI (SDUI) Layout Engine emitting v1 abeta-dev/kmp (bff@v0.6.0) PageResponse contracts across 7 vertical workspaces (abeta-fresh, abeta-bites, abeta-pulse, abeta-mart, abeta-spark, abeta-trade, abeta-pay), 29 wire atoms / 31 UI atoms (incl. MediaPagerAtom), 21 snippet types, 36 ComposedNodeKinds with 9-position box_alignment & node Tracking/ClickTracking (Atomic Snippet Molding Engine), SnippetEnvelope.Sticky, deterministic snippets.EnsureComponentIDs, 18 action types, rule targeting, UTC schedules, dynamic slotting, immutable snapshots, rollback, fallback protection, and embedded Visual Layout Studio (/studio).",
 		},
 		"servers": []map[string]string{{"url": "/"}},
 		"paths": map[string]any{
@@ -56,7 +56,7 @@ func registerOpenAPIRoutes(engine *gin.Engine, serviceName string) {
 				"post": map[string]any{"summary": "Place express quick-commerce order with celebration follow-up", "tags": []string{"Runtime SDUI"}},
 			},
 			"/api/v1/studio/tenants":                 map[string]any{"get": map[string]any{"summary": "List tenants (7 pre-seeded vertical workspaces incl. abeta-pay)", "tags": []string{"Studio CMS"}}, "post": map[string]any{"summary": "Create/update tenant", "tags": []string{"Studio CMS"}}},
-			"/api/v1/studio/templates":               map[string]any{"get": map[string]any{"summary": "List 21 KMP snippet templates (28 wire atoms, 29 ComposedNodeKinds)", "tags": []string{"Studio CMS"}}},
+			"/api/v1/studio/templates":               map[string]any{"get": map[string]any{"summary": "List 21 KMP snippet templates (29 wire atoms, 36 ComposedNodeKinds)", "tags": []string{"Studio CMS"}}},
 			"/api/v1/studio/widgets":                 map[string]any{"get": map[string]any{"summary": "List widgets", "tags": []string{"Studio CMS"}}, "post": map[string]any{"summary": "Create/update widget", "tags": []string{"Studio CMS"}}},
 			"/api/v1/studio/layouts":                 map[string]any{"get": map[string]any{"summary": "List layouts", "tags": []string{"Studio CMS"}}},
 			"/api/v1/studio/layouts/{slug}":          map[string]any{"get": map[string]any{"summary": "Get layout draft", "tags": []string{"Studio CMS"}}, "put": map[string]any{"summary": "Create/update layout draft & slots", "tags": []string{"Studio CMS"}}},

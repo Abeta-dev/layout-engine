@@ -169,6 +169,27 @@ func promoteExtendedComposedNodeAtoms(nodeMap map[string]any) {
 	if s, ok := nodeMap["qr_code"].(string); ok {
 		nodeMap["qr_code"] = map[string]any{"payload": s}
 	}
+	if s, ok := nodeMap["text_field"].(string); ok {
+		nodeMap["text_field"] = map[string]any{"field_id": s, "label": s}
+	}
+	if s, ok := nodeMap["switch"].(string); ok {
+		nodeMap["switch"] = map[string]any{"field_id": s, "label": s}
+	}
+	if s, ok := nodeMap["checkbox"].(string); ok {
+		nodeMap["checkbox"] = map[string]any{"field_id": s, "label": s}
+	}
+	switch mp := nodeMap["media_pager"].(type) {
+	case map[string]any:
+		promoteImageSliceField(mp, "items")
+	case []string:
+		m := map[string]any{"items": mp}
+		promoteImageSliceField(m, "items")
+		nodeMap["media_pager"] = m
+	case []any:
+		m := map[string]any{"items": mp}
+		promoteImageSliceField(m, "items")
+		nodeMap["media_pager"] = m
+	}
 }
 
 func isComposedContainerKind(kind string) bool {
@@ -177,7 +198,9 @@ func isComposedContainerKind(kind string) bool {
 		snippets.ComposedNodeRow,
 		snippets.ComposedNodeBox,
 		snippets.ComposedNodeCard,
-		snippets.ComposedNodeFlowRow:
+		snippets.ComposedNodeFlowRow,
+		snippets.ComposedNodeScrollRow,
+		snippets.ComposedNodeGrid:
 		return true
 	default:
 		return false

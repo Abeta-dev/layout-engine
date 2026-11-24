@@ -43,6 +43,7 @@ func seedWidgets(tenantID string, now time.Time) []domain.Widget {
 		seedMorningBannerWidget(tenantID, now),
 		seedETAMetricWidget(tenantID, now),
 		seedFreshLoyaltyComposedWidget(tenantID, now),
+		seedFreshExpressUpsellRailWidget(tenantID, now),
 	)
 
 	products := []seedProductSpec{
@@ -382,7 +383,7 @@ func seedETAMetricWidget(tenantID string, now time.Time) domain.Widget {
 }
 
 func seedFreshSearchBarWidget(tenantID string, now time.Time) domain.Widget {
-	return buildSeedSearchBarWidget(
+	w := buildSeedSearchBarWidget(
 		tenantID,
 		"w_fresh_search_bar",
 		"fresh-search-bar",
@@ -392,6 +393,8 @@ func seedFreshSearchBarWidget(tenantID string, now time.Time) domain.Widget {
 		"fresh-home",
 		now,
 	)
+	w.Props["sticky"] = true
+	return w
 }
 
 func seedFreshCategoryChipsWidget(tenantID string, now time.Time) domain.Widget {

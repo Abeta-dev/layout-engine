@@ -82,13 +82,22 @@ func composeSeedFallbackPage(layout domain.Layout, widgets map[string]domain.Wid
 		if !ok {
 			continue
 		}
-		envs = append(envs, hydrateSeedEnvelope(w, "", widgets, map[string]bool{}))
+		env := hydrateSeedEnvelope(w, "", widgets, map[string]bool{})
+		if sl.Sticky {
+			env.Sticky = true
+		}
+		if sl.Overrides != nil {
+			if b, ok := sl.Overrides["sticky"].(bool); ok {
+				env.Sticky = b
+			}
+		}
+		envs = append(envs, env)
 	}
 
 	toolbar := cloneToolbarReplaceCity(layout.PageConfig.Toolbar, "Bengaluru")
 	title := strings.ReplaceAll(layout.Title, "{{city}}", "Bengaluru")
 
-	return snippets.PageResponse{
+	page := snippets.PageResponse{
 		PageID:         layout.Slug,
 		Title:          title,
 		Toolbar:        toolbar,
@@ -104,6 +113,8 @@ func composeSeedFallbackPage(layout domain.Layout, widgets map[string]domain.Wid
 			Properties: map[string]any{"page_id": layout.Slug, "fallback": "true"},
 		},
 	}
+	snippets.EnsureComponentIDs(&page)
+	return page
 }
 
 func cloneToolbarReplaceCity(tb *snippets.ToolbarSpec, city string) *snippets.ToolbarSpec {
@@ -135,6 +146,8 @@ func hydrateSeedEnvelope(
 	nextVisited[w.ID] = true
 
 	data := cloneAndReplaceCity(w.Props, "Bengaluru")
+	sticky, _ := data["sticky"].(bool)
+	delete(data, "sticky")
 
 	switch w.SnippetType {
 	case snippets.SnippetTypeGrid, snippets.SnippetTypeCarousel:
@@ -211,6 +224,7 @@ func hydrateSeedEnvelope(
 		Data:            data,
 		Tracking:        tracking,
 		Motion:          motion,
+		Sticky:          sticky,
 	}
 }
 

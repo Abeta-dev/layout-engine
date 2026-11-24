@@ -2612,11 +2612,144 @@ textarea {
   flex-direction: column;
   gap: 4px;
 }
+.kmp-composed-box.has-overlay {
+  min-height: 88px;
+  border-radius: 10px;
+  background: var(--kmp-surface-2);
+  overflow: hidden;
+}
+.kmp-box-child {
+  position: absolute;
+  z-index: 2;
+  max-width: calc(100% - 12px);
+}
+.kmp-box-align-top_start { top: 6px; left: 6px; }
+.kmp-box-align-top_center { top: 6px; left: 50%; transform: translateX(-50%); }
+.kmp-box-align-top_end { top: 6px; right: 6px; }
+.kmp-box-align-center_start { top: 50%; left: 6px; transform: translateY(-50%); }
+.kmp-box-align-center { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+.kmp-box-align-center_end { top: 50%; right: 6px; transform: translateY(-50%); }
+.kmp-box-align-bottom_start { bottom: 6px; left: 6px; }
+.kmp-box-align-bottom_center { bottom: 6px; left: 50%; transform: translateX(-50%); }
+.kmp-box-align-bottom_end { bottom: 6px; right: 6px; }
 .kmp-composed-flow-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
+}
+.kmp-composed-scroll-row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scroll-snap-type: x proximity;
+}
+.kmp-composed-scroll-row > * {
+  flex: 0 0 164px;
+  min-width: 152px;
+  scroll-snap-align: start;
+}
+.kmp-composed-grid {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+.kmp-sticky-wrap {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  background: var(--kmp-bg);
+  padding: 2px 0;
+  box-shadow: 0 4px 12px -8px rgba(15, 23, 42, 0.28);
+}
+.kmp-composed-img-box {
+  width: 100%;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+.kmp-composed-textfield {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+.kmp-input-box {
+  width: 100%;
+  padding: 7px 9px;
+  border-radius: 8px;
+  border: 1px solid var(--kmp-border);
+  background: var(--kmp-surface-2);
+  color: var(--kmp-text);
+  font-size: 11.5px;
+}
+.kmp-composed-switch,
+.kmp-composed-checkbox,
+.kmp-composed-slider {
+  width: 100%;
+}
+.kmp-media-pager {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+.kmp-media-pager-track {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+}
+.kmp-media-pager-slide {
+  position: relative;
+  flex: 0 0 100%;
+  border-radius: 11px;
+  overflow: hidden;
+  border: 1px solid var(--kmp-border);
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.14), rgba(16, 185, 129, 0.14));
+  display: flex;
+  align-items: flex-end;
+  padding: 8px;
+  scroll-snap-align: center;
+}
+.kmp-media-pager-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.kmp-media-pager-caption {
+  position: relative;
+  z-index: 1;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--kmp-text);
+  background: rgba(255, 255, 255, 0.85);
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+.kmp-dark .kmp-media-pager-caption {
+  background: rgba(15, 23, 42, 0.8);
+}
+.kmp-media-pager-dots {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+}
+.kmp-media-pager-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--kmp-border);
+}
+.kmp-media-pager-dot.active {
+  width: 14px;
+  background: #2563EB;
 }
 .kmp-composed-icon {
   width: 24px;
@@ -2649,7 +2782,7 @@ textarea {
   width: 100%;
 }
 
-/* Extended Wire Atoms (v0.5.0 — 12 new ComposedNodeKinds) */
+/* Extended Wire Atoms (v0.6.0 — 36 ComposedNodeKinds & 9-position box_alignment) */
 .molder-helper-bar {
   border-color: var(--violet);
   background: var(--bg-elevated);

@@ -102,6 +102,7 @@ func (c *DefaultPageComposer) Compose(
 		Tracking:       buildPageTracking(layoutSlug, len(resolved), ctx),
 	}
 
+	snippets.EnsureComponentIDs(&page)
 	return page, nil
 }
 

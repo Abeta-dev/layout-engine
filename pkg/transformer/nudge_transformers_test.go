@@ -634,3 +634,266 @@ func TestTransformComposedBlock_ExtendedShorthandStrings(t *testing.T) {
 		t.Fatalf("qr_code shorthand failed: %+v", ch[4])
 	}
 }
+
+func TestTransformComposedBlock_V040KindsBoxAlignmentTrackingAndContainers(t *testing.T) {
+	t.Parallel()
+
+	reg := transformer.NewDefaultRegistry()
+	ctx := domain.RequestContext{City: "Bengaluru", Segment: "vip"}
+
+	env, err := reg.Transform(transformer.TransformInput{
+		Slot: domain.LayoutSlot{SlotID: "slot_express_molded", Sticky: true, Enabled: true},
+		Widget: domain.Widget{
+			ID:          "w_express_molded",
+			SnippetType: snippets.SnippetTypeComposedBlock,
+			Active:      true,
+			Props: map[string]any{
+				"recipe_name": "express_36_kinds_showcase",
+				"root": map[string]any{
+					"kind":       snippets.ComposedNodeColumn,
+					"spacing_dp": 8,
+					"tracking": map[string]any{
+						"event_name": "node_impression",
+						"properties": map[string]any{"city": "{{city}}", "recipe": "express_36"},
+					},
+					"click_tracking": map[string]any{
+						"event_name": "interaction_click",
+						"properties": map[string]any{"segment": "{{segment}}"},
+					},
+					"children": []any{
+						map[string]any{
+							"kind": snippets.ComposedNodeBox,
+							"children": []any{
+								map[string]any{
+									"kind":          snippets.ComposedNodeMediaPager,
+									"box_alignment": snippets.BoxAlignCenter,
+									"media_pager": map[string]any{
+										"height_dp": 160,
+										"items": []any{
+											"https://cdn.abeta.dev/fresh/hero_1.png",
+											map[string]any{"url": "https://cdn.abeta.dev/fresh/hero_2.png", "content_description": "Slide 2"},
+										},
+									},
+								},
+								map[string]any{
+									"kind":          snippets.ComposedNodeTag,
+									"box_alignment": snippets.BoxAlignTopStart,
+									"tag":           "20% OFF",
+								},
+								map[string]any{
+									"kind":          snippets.ComposedNodeTag,
+									"box_alignment": snippets.BoxAlignBottomEnd,
+									"tag":           "8 MINS",
+								},
+							},
+						},
+						map[string]any{
+							"kind":       snippets.ComposedNodeScrollRow,
+							"spacing_dp": 10,
+						},
+						map[string]any{
+							"kind":    snippets.ComposedNodeGrid,
+							"columns": 2,
+							"columns_by_width": map[string]any{
+								"compact":  2,
+								"medium":   3,
+								"expanded": 4,
+							},
+						},
+						map[string]any{
+							"kind":       snippets.ComposedNodeTextField,
+							"text_field": "delivery_instructions",
+						},
+						map[string]any{
+							"kind":   snippets.ComposedNodeSwitch,
+							"switch": map[string]any{"field_id": "leave_at_door", "label": "Leave at door", "checked": true},
+						},
+						map[string]any{
+							"kind":     snippets.ComposedNodeCheckbox,
+							"checkbox": map[string]any{"field_id": "no_cutlery", "label": "Skip cutlery", "checked": true},
+						},
+						map[string]any{
+							"kind": snippets.ComposedNodeSlider,
+							"slider": map[string]any{
+								"field_id":   "rider_tip",
+								"label":      "Rider Tip",
+								"value":      2.0,
+								"min_value":  0.0,
+								"max_value":  10.0,
+								"steps":      10,
+								"unit_label": "USD",
+							},
+						},
+					},
+				},
+			},
+		},
+		Context: ctx,
+	})
+	if err != nil {
+		t.Fatalf("Transform(v0.4.0 composed_block) failed: %v", err)
+	}
+	if !env.Sticky {
+		t.Fatal("expected env.Sticky=true from slot.Sticky")
+	}
+
+	directData, ok := env.Data.(snippets.ComposedBlockSnippetData)
+	if !ok {
+		t.Fatalf("expected ComposedBlockSnippetData, got %T", env.Data)
+	}
+	// Empty scroll_row and grid containers MUST initialize non-nil Children slices.
+	if directData.Root.Children[1].Kind != snippets.ComposedNodeScrollRow || directData.Root.Children[1].Children == nil {
+		t.Fatalf("expected non-nil Children on empty scroll_row, got %#v", directData.Root.Children[1])
+	}
+	if directData.Root.Children[2].Kind != snippets.ComposedNodeGrid || directData.Root.Children[2].Children == nil {
+		t.Fatalf("expected non-nil Children on empty grid, got %#v", directData.Root.Children[2])
+	}
+
+	raw, err := json.Marshal(env)
+	if err != nil {
+		t.Fatalf("json.Marshal failed: %v", err)
+	}
+	var rt snippets.SnippetEnvelope
+	if err := json.Unmarshal(raw, &rt); err != nil {
+		t.Fatalf("json.Unmarshal failed: %v", err)
+	}
+	if !rt.Sticky {
+		t.Fatal("expected round-tripped env.Sticky=true")
+	}
+	decoded, err := snippets.DecodeSnippetData[snippets.ComposedBlockSnippetData](rt)
+	if err != nil {
+		t.Fatalf("DecodeSnippetData failed: %v", err)
+	}
+
+	if decoded.Root.Tracking == nil || decoded.Root.Tracking.EventName != "node_impression" || decoded.Root.Tracking.Properties["city"] != "Bengaluru" {
+		t.Fatalf("root tracking failed: %+v", decoded.Root.Tracking)
+	}
+	if decoded.Root.ClickTracking == nil || decoded.Root.ClickTracking.EventName != "interaction_click" || decoded.Root.ClickTracking.Properties["segment"] != "vip" {
+		t.Fatalf("root click_tracking failed: %+v", decoded.Root.ClickTracking)
+	}
+
+	box := decoded.Root.Children[0]
+	if box.Children[0].BoxAlignment != snippets.BoxAlignCenter || box.Children[1].BoxAlignment != snippets.BoxAlignTopStart || box.Children[2].BoxAlignment != snippets.BoxAlignBottomEnd {
+		t.Fatalf("unexpected box_alignment values: %+v", box.Children)
+	}
+	mp := box.Children[0].MediaPager
+	if mp == nil || len(mp.Items) != 2 || mp.Items[0].URL != "https://cdn.abeta.dev/fresh/hero_1.png" || mp.Items[1].ContentDescription != "Slide 2" {
+		t.Fatalf("media_pager decode/promotion failed: %+v", mp)
+	}
+
+	grid := decoded.Root.Children[2]
+	if grid.Columns == nil || *grid.Columns != 2 || grid.ColumnsByWidth == nil || grid.ColumnsByWidth.Expanded == nil || *grid.ColumnsByWidth.Expanded != 4 {
+		t.Fatalf("grid columns/columns_by_width decode failed: %+v", grid)
+	}
+	if tf := decoded.Root.Children[3].TextField; tf == nil || tf.FieldID != "delivery_instructions" || tf.Label != "delivery_instructions" {
+		t.Fatalf("text_field shorthand promotion failed: %+v", tf)
+	}
+	if sw := decoded.Root.Children[4].Switch; sw == nil || sw.FieldID != "leave_at_door" || !sw.Checked {
+		t.Fatalf("switch decode failed: %+v", sw)
+	}
+	if cb := decoded.Root.Children[5].Checkbox; cb == nil || cb.FieldID != "no_cutlery" || !cb.Checked {
+		t.Fatalf("checkbox decode failed: %+v", cb)
+	}
+	if sl := decoded.Root.Children[6].Slider; sl == nil || sl.FieldID != "rider_tip" || sl.Value != 2.0 || sl.UnitLabel != "USD" {
+		t.Fatalf("slider decode failed: %+v", sl)
+	}
+}
+
+func TestPageComposer_StickyPropagationAndEnsureComponentIDs(t *testing.T) {
+	t.Parallel()
+
+	composer := transformer.NewPageComposer(transformer.NewDefaultRegistry())
+	widgets := map[string]domain.Widget{
+		"w_search_sticky": {
+			ID:          "w_search_sticky",
+			SnippetType: snippets.SnippetTypeSearchBar,
+			Active:      true,
+			Props: map[string]any{
+				"sticky":      true,
+				"search_id":   "sticky_search",
+				"placeholder": "Search {{city}}...",
+				"on_submit":   map[string]any{"type": "show_toast", "payload": map[string]any{"message": "Searching"}},
+			},
+		},
+		"w_molded_no_ids": {
+			ID:          "w_molded_no_ids",
+			SnippetType: snippets.SnippetTypeComposedBlock,
+			Active:      true,
+			Props: map[string]any{
+				"block_id": "blk_auto_ids",
+				"root": map[string]any{
+					"kind": snippets.ComposedNodeColumn,
+					"children": []any{
+						map[string]any{
+							"kind":   snippets.ComposedNodeButton,
+							"button": map[string]any{"label": "Order Now", "variant": "primary"},
+						},
+						map[string]any{
+							"kind":        snippets.ComposedNodeMediaPager,
+							"media_pager": map[string]any{"height_dp": 140, "items": []any{"https://cdn.abeta.dev/fresh/a.png"}},
+						},
+						map[string]any{
+							"node_id": "explicit_keep_me",
+							"kind":    snippets.ComposedNodeText,
+							"text":    "Preserved ID",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	slots := []domain.LayoutSlot{
+		{SlotID: "slot_sticky_props", WidgetID: "w_search_sticky", Position: 0, Enabled: true},
+		{SlotID: "slot_override_unstick", WidgetID: "w_search_sticky", Position: 1, Overrides: map[string]any{"sticky": false}, Enabled: true},
+		{SlotID: "slot_slot_sticky", WidgetID: "w_molded_no_ids", Position: 2, Sticky: true, Enabled: true},
+	}
+
+	page, err := composer.Compose(
+		"express-home",
+		"Express Home",
+		domain.LayoutPageConfig{},
+		slots,
+		widgets,
+		domain.RequestContext{City: "Bengaluru"},
+	)
+	if err != nil {
+		t.Fatalf("Compose failed: %v", err)
+	}
+	if len(page.Snippets) != 3 {
+		t.Fatalf("expected 3 snippets, got %d", len(page.Snippets))
+	}
+	if !page.Snippets[0].Sticky {
+		t.Fatal("expected slot 0 Sticky=true from widget props")
+	}
+	if page.Snippets[1].Sticky {
+		t.Fatal("expected slot 1 Sticky=false from slot override")
+	}
+	if !page.Snippets[2].Sticky {
+		t.Fatal("expected slot 2 Sticky=true from LayoutSlot.Sticky")
+	}
+
+	// Verify EnsureComponentIDs deterministically populated missing IDs while preserving explicit ones.
+	searchData, err := snippets.DecodeSnippetData[snippets.SearchBarSnippetData](page.Snippets[0])
+	if err != nil || searchData.OnSubmit == nil || searchData.OnSubmit.ID == "" {
+		t.Fatalf("expected deterministic OnSubmit.ID on search_bar, got %+v (err=%v)", searchData, err)
+	}
+	composedData, err := snippets.DecodeSnippetData[snippets.ComposedBlockSnippetData](page.Snippets[2])
+	if err != nil {
+		t.Fatalf("decode composed_block: %v", err)
+	}
+	if composedData.Root.NodeID == "" {
+		t.Fatal("expected EnsureComponentIDs to assign root.NodeID")
+	}
+	btnNode := composedData.Root.Children[0]
+	if btnNode.NodeID == "" || btnNode.Button == nil || btnNode.Button.ID == "" {
+		t.Fatalf("expected deterministic node_id & button.id, got %+v", btnNode)
+	}
+	mpNode := composedData.Root.Children[1]
+	if mpNode.NodeID == "" || mpNode.MediaPager == nil || mpNode.MediaPager.ID == "" || len(mpNode.MediaPager.Items) != 1 || mpNode.MediaPager.Items[0].ID == "" {
+		t.Fatalf("expected deterministic media_pager & item IDs, got %+v", mpNode)
+	}
+	if composedData.Root.Children[2].NodeID != "explicit_keep_me" {
+		t.Fatalf("expected explicit node_id preserved, got %q", composedData.Root.Children[2].NodeID)
+	}
+}

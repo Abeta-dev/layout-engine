@@ -153,6 +153,10 @@ func (r *Registry) Transform(input TransformInput) (snippets.SnippetEnvelope, er
 		env.Motion = motion
 	}
 
+	if !env.Sticky && resolveSticky(input) {
+		env.Sticky = true
+	}
+
 	return env, nil
 }
 

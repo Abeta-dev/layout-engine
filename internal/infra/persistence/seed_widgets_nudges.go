@@ -5,6 +5,7 @@ import (
 
 	"github.com/abeta-dev/kmp/bff/pkg/sdui/actions"
 	"github.com/abeta-dev/kmp/bff/pkg/sdui/atoms"
+	"github.com/abeta-dev/kmp/bff/pkg/sdui/molecules"
 	"github.com/abeta-dev/kmp/bff/pkg/sdui/snippets"
 	"github.com/abeta-dev/kmp/bff/pkg/sdui/theming"
 	"github.com/abeta-dev/layout-engine/internal/domain"
@@ -164,6 +165,104 @@ func seedFreshLoyaltyComposedWidget(tenantID string, now time.Time) domain.Widge
 			"properties": map[string]any{"recipe": "loyalty_stamp_card", "vertical": "abeta-fresh"},
 		},
 		Tags:      []string{"composed_block", "loyalty", "molded"},
+		Active:    true,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+}
+
+func seedFreshExpressUpsellRailWidget(tenantID string, now time.Time) domain.Widget {
+	addMintToast := actions.NewShowToastAction("toast_express_upsell_mint", actions.ShowToastPayload{
+		Message:    "Added Cold-Pressed Mint Cooler to express basket in {{city}}!",
+		DurationMs: 1800,
+		Variant:    "success",
+	})
+	addCrispsToast := actions.NewShowToastAction("toast_express_upsell_crisps", actions.ShowToastPayload{
+		Message:    "Added Sea Salt Kettle Crisps to express basket in {{city}}!",
+		DurationMs: 1800,
+		Variant:    "success",
+	})
+	addIceCreamToast := actions.NewShowToastAction("toast_express_upsell_gelato", actions.ShowToastPayload{
+		Message:    "Added Pistachio Mini Gelato to express basket in {{city}}!",
+		DurationMs: 1800,
+		Variant:    "success",
+	})
+	favToast := actions.NewShowToastAction("toast_express_upsell_fav", actions.ShowToastPayload{
+		Message:    "Saved to Abeta Fresh express favorites",
+		DurationMs: 1600,
+		Variant:    "info",
+	})
+
+	env := molecules.ImpulseUpsellRail(
+		"w_fresh_express_upsell",
+		"fresh_express_upsell",
+		"Express Quick-Add in {{city}}",
+		[]molecules.ProductTileSpec{
+			{
+				ProductID:         "mint_cooler",
+				Title:             "Cold-Pressed Mint Cooler",
+				Subtitle:          "250 ml · Chilled",
+				ImageURL:          "https://cdn.abeta.dev/fresh/mint_cooler.png",
+				PriceText:         "$1.99",
+				OriginalPriceText: "$2.49",
+				DiscountRibbon:    "20% OFF",
+				EtaLabel:          "8 MINS",
+				Rating:            4.9,
+				ReviewCount:       atoms.IntPtr(640),
+				Quantity:          0,
+				MaxQuantity:       8,
+				OnIncrement:       &addMintToast,
+				OnFavorite:        &favToast,
+			},
+			{
+				ProductID:         "kettle_crisps",
+				Title:             "Sea Salt Kettle Crisps",
+				Subtitle:          "120 g · Small batch",
+				ImageURL:          "https://cdn.abeta.dev/fresh/kettle_crisps.png",
+				PriceText:         "$2.29",
+				OriginalPriceText: "$2.79",
+				DiscountRibbon:    "18% OFF",
+				TopEndBadge:       "VEG",
+				EtaLabel:          "8 MINS",
+				Rating:            4.8,
+				ReviewCount:       atoms.IntPtr(412),
+				Quantity:          1,
+				MaxQuantity:       8,
+				OnIncrement:       &addCrispsToast,
+			},
+			{
+				ProductID:         "pistachio_gelato",
+				Title:             "Pistachio Mini Gelato",
+				Subtitle:          "100 ml · Dry-ice pack",
+				ImageURL:          "https://cdn.abeta.dev/fresh/pistachio_gelato.png",
+				PriceText:         "$2.99",
+				OriginalPriceText: "$3.49",
+				DiscountRibbon:    "15% OFF",
+				TopEndBadge:       "NEW",
+				EtaLabel:          "8 MINS",
+				Rating:            5.0,
+				ReviewCount:       atoms.IntPtr(298),
+				Quantity:          0,
+				MaxQuantity:       6,
+				OnIncrement:       &addIceCreamToast,
+			},
+		},
+	)
+
+	return domain.Widget{
+		ID:          "w_fresh_express_upsell",
+		TenantID:    tenantID,
+		Slug:        "fresh-express-upsell",
+		Name:        "Abeta Fresh Express Upsell Rail (Molded Molecule)",
+		TemplateKey: "tmpl_composed_block",
+		SnippetType: snippets.SnippetTypeComposedBlock,
+		Props:       structToMap(env.Data),
+		Motion:      structToMap(atoms.MotionSpec{Enter: atoms.MotionTransitionSlideUp, DurationToken: atoms.MotionDurationFast}),
+		Tracking: map[string]any{
+			"event_name": "composed_block_viewed",
+			"properties": map[string]any{"recipe": "express_impulse_upsell_rail", "vertical": "abeta-fresh"},
+		},
+		Tags:      []string{"composed_block", "express", "molecule", "upsell"},
 		Active:    true,
 		CreatedAt: now,
 		UpdatedAt: now,

@@ -95,6 +95,18 @@ func verifySeededVertical(t *testing.T, ctx context.Context, store *SQLStore, ex
 	if err != nil || len(templates) != 21 {
 		t.Fatalf("[%s] expected 21 templates (all KMP v1 SnippetTypes), got %d (err=%v)", exp.slug, len(templates), err)
 	}
+	for _, tmpl := range templates {
+		if tmpl.Key == "tmpl_composed_block" {
+			rawKinds, ok := tmpl.Schema["composed_node_kinds"].([]any)
+			if !ok || len(rawKinds) != 36 {
+				t.Fatalf("[%s] tmpl_composed_block expected 36 composed_node_kinds in schema, got %d (%v)", exp.slug, len(rawKinds), tmpl.Schema["composed_node_kinds"])
+			}
+			rawAligns, ok := tmpl.Schema["box_alignments"].([]any)
+			if !ok || len(rawAligns) != 9 {
+				t.Fatalf("[%s] tmpl_composed_block expected 9 box_alignments in schema, got %d (%v)", exp.slug, len(rawAligns), tmpl.Schema["box_alignments"])
+			}
+		}
+	}
 
 	widgets, err := store.ListWidgets(ctx, tenant.ID)
 	if err != nil || len(widgets) < exp.minWidgets {
@@ -179,9 +191,13 @@ func verifyFreshAndVerticalSpecifics(t *testing.T, ctx context.Context, store *S
 	if freshHomeFB.Page.FloatingCart.FreeDeliveryThresholdCents == nil || *freshHomeFB.Page.FloatingCart.FreeDeliveryThresholdCents != 1500 {
 		t.Fatalf("expected fresh-home free_delivery_threshold_cents=1500, got %+v", freshHomeFB.Page.FloatingCart)
 	}
-	var foundMarquee, foundNudgeWithCountdown, foundComposedLoyalty bool
+	var foundMarquee, foundNudgeWithCountdown, foundComposedLoyalty, foundExpressUpsell, foundStickySearch bool
 	for _, env := range freshHomeFB.Page.Snippets {
 		switch env.SnippetType {
+		case snippets.SnippetTypeSearchBar:
+			if env.Sticky {
+				foundStickySearch = true
+			}
 		case snippets.SnippetTypeMarqueeStrip:
 			d, err := snippets.DecodeSnippetData[snippets.MarqueeStripSnippetData](env)
 			if err == nil && len(d.Items) >= 3 {
@@ -197,11 +213,14 @@ func verifyFreshAndVerticalSpecifics(t *testing.T, ctx context.Context, store *S
 			if err == nil && d.RecipeName == "loyalty_stamp_card" && d.Root.Kind == snippets.ComposedNodeCard {
 				foundComposedLoyalty = true
 			}
+			if err == nil && d.RecipeName == "express_impulse_upsell_rail" && len(d.Root.Children) >= 2 && d.Root.Children[1].Kind == snippets.ComposedNodeScrollRow {
+				foundExpressUpsell = true
+			}
 		}
 	}
-	if !foundMarquee || !foundNudgeWithCountdown || !foundComposedLoyalty {
-		t.Fatalf("fresh-home missing enriched v0.3.0 widgets: marquee=%v nudge_with_countdown=%v composed_loyalty=%v",
-			foundMarquee, foundNudgeWithCountdown, foundComposedLoyalty)
+	if !foundMarquee || !foundNudgeWithCountdown || !foundComposedLoyalty || !foundExpressUpsell || !foundStickySearch {
+		t.Fatalf("fresh-home missing enriched v0.4.0 widgets: marquee=%v nudge_with_countdown=%v composed_loyalty=%v express_upsell=%v sticky_search=%v",
+			foundMarquee, foundNudgeWithCountdown, foundComposedLoyalty, foundExpressUpsell, foundStickySearch)
 	}
 
 	bitesTenant, err := store.GetTenantBySlug(ctx, "abeta-bites")

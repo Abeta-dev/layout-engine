@@ -1,6 +1,6 @@
 # `abeta-dev/kmp` Client Integration & Wire Protocol Guide
 
-**Abeta Dynamic Layout Engine (`v0.3.0`)** consumes [`github.com/abeta-dev/kmp/bff@v0.5.0`](https://github.com/Abeta-dev/kmp) (`pkg/sdui/{actions,atoms,snippets,theming}`) and [`github.com/abeta-dev/go-libs@v0.4.0`](https://github.com/Abeta-dev/go-libs) (`ginmw.Envelope`) directly. Because both repositories share the exact same Go `v1` wire contracts, any **`abeta-dev/kmp`** client can switch from the static sample BFF to the Dynamic Layout Engine by changing a single base URL.
+**Abeta Dynamic Layout Engine (`v0.4.0`)** consumes [`github.com/abeta-dev/kmp/bff@v0.6.0`](https://github.com/Abeta-dev/kmp) (`pkg/sdui/{actions,atoms,snippets,molecules,theming}`) and [`github.com/abeta-dev/go-libs@v0.4.0`](https://github.com/Abeta-dev/go-libs) (`ginmw.Envelope`) directly. Because both repositories share the exact same Go `v1` wire contracts, any **`abeta-dev/kmp`** client can switch from the static sample BFF to the Dynamic Layout Engine by changing a single base URL.
 
 ---
 
@@ -33,10 +33,11 @@ In `kmp/storybook` (Desktop JVM, macOS Cocoa, iOS `AbetaStorybookKit`, or WasmJS
 
 ## 2. 1:1 `v1` SDUI Wire Contract Parity
 
-| Contract Surface | Source Package (`github.com/abeta-dev/kmp/bff@v0.5.0`) | Supported Elements |
+| Contract Surface | Source Package (`github.com/abeta-dev/kmp/bff@v0.6.0`) | Supported Elements |
 | :--- | :--- | :--- |
-| **21 Snippet Types** | `pkg/sdui/snippets` | `header_v1`, `banner_v1`, `metric_card`, `card_v1`, `action_row`, `form_v1`, `empty_state`, `divider`, `spacer`, `carousel`, `grid`, `tabs`, `accordion`, `product_card`, `search_bar`, `chip_group`, `swipe_deck`, `nudge_bar`, `marquee_strip`, `order_tracker`, `composed_block` (29 `ComposedNodeKind`s, `maxDepth <= 6`) |
-| **28 Wire Atoms / 30 UI Atoms** | `pkg/sdui/atoms` | Text, Icon, Tag, Button, Image, TextField, Divider, Spacer, Progress, Switch, Checkbox, Slider, Avatar, Skeleton, Stepper (`StepperAtom`), Countdown (`CountdownAtom`), plus 12 extended atoms (`RadioGroup`, `Select`, `OtpInput`, `Chip`, `SegmentedControl`, `Rating`, `Price`, `Badge`, `AlertBanner`, `StatTile`, `KeyValueRow`, `QrCode`) + `MotionSpec` (7 ambient `MotionLoopEffect`s), `LayoutConfig`, `TrackingMeta` |
+| **21 Snippet Types** | `pkg/sdui/snippets` | `header_v1`, `banner_v1`, `metric_card`, `card_v1`, `action_row`, `form_v1`, `empty_state`, `divider`, `spacer`, `carousel`, `grid`, `tabs`, `accordion`, `product_card`, `search_bar`, `chip_group`, `swipe_deck`, `nudge_bar`, `marquee_strip`, `order_tracker`, `composed_block` (36 `ComposedNodeKind`s, 9-position `box_alignment`, `ComposedNode.Tracking`/`ClickTracking`, `maxDepth <= 6`), plus `SnippetEnvelope.Sticky` & `snippets.EnsureComponentIDs` |
+| **29 Wire Atoms / 31 UI Atoms** | `pkg/sdui/atoms` | Text, Icon, Tag, Button, Image, TextField, Divider, Spacer, Progress, Switch, Checkbox, Slider, Avatar, Skeleton, Stepper (`StepperAtom`), Countdown (`CountdownAtom`), MediaPager (`MediaPagerAtom`), plus 12 extended atoms (`RadioGroup`, `Select`, `OtpInput`, `Chip`, `SegmentedControl`, `Rating`, `Price`, `Badge`, `AlertBanner`, `StatTile`, `KeyValueRow`, `QrCode`) + `MotionSpec` (7 ambient `MotionLoopEffect`s), `LayoutConfig`, `TrackingMeta` |
+| **Server-Molded Express Molecules** | `pkg/sdui/molecules` | `ExpressProductTile`, `CategoryGridSection`, `ImpulseUpsellRail`, `DeliveryInstructionsCard`, `CouponApplyCard`, `CheckoutBillSummary` — molded purely from `composed_block` + atoms with zero custom client snippets |
 | **18 Action Types** | `pkg/sdui/actions` | `navigate`, `back_press`, `open_dialog`, `dismiss_overlay`, `show_toast`, `call_api`, `save_state`, `delete_state`, `track_event`, `refresh_page`, `copy_to_clipboard`, `update_snippets`, `batch`, `trigger_feedback`, `open_url`, `share`, `request_permission`, `biometric_auth` |
 | **Page Chrome & Adaptive Specs** | `pkg/sdui/snippets` | `ToolbarSpec`, `BottomBarSpec`, `FloatingCartSpec` (incl. free-delivery threshold nudge fields), `AdaptivePageSpec` (`single_column`, `centered`, `split_pane`), `ResponsiveColumnsSpec`, `ResponsiveIntSpec`, `PaginationSpec`, `PullToRefresh`, `PageActions` |
 | **Design Token Catalog** | `pkg/sdui/theming` | Base token catalog merged dynamically with rule-matched `TokenOverride` entries |

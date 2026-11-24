@@ -39,7 +39,7 @@ type Tenant struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
-// WidgetTemplate is a reusable blueprint mapping to one of the 14 KMP v1 SnippetTypes.
+// WidgetTemplate is a reusable blueprint mapping to one of the 21 KMP v1 SnippetTypes.
 type WidgetTemplate struct {
 	ID           string         `json:"id"`
 	TenantID     string         `json:"tenant_id"`
@@ -112,6 +112,7 @@ type LayoutSlot struct {
 	Schedule  *ScheduleWindow `json:"schedule,omitempty"`
 	Overrides map[string]any  `json:"overrides,omitempty"`
 	Pinned    bool            `json:"pinned,omitempty"`
+	Sticky    bool            `json:"sticky,omitempty"`
 	Enabled   bool            `json:"enabled"`
 }
 
